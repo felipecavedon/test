@@ -305,9 +305,7 @@
         zombieFlesh: '#8b8b8b',      // Medium grey for main body
         zombieFleshDark: '#5a5a5a',  // Darker grey for shadows
         zombieFleshLight: '#b0b0b0',  // Lighter grey for highlights
-        acid: '#00ff00',              // Bright green acid
-        headshot: '#ff0000',          // Bright red for headshots
-        wood: '#bc6a3c'               // Wood color for Tank zombie shield
+        acid: '#00ff00'               // Bright green acid
     };
 
     // =====================================================
@@ -359,50 +357,6 @@
   "..OGGGGGGGGO",
   "..OGGGGGGOO.",
   "...OOOOOOO.."
-            ],
-            right: null
-        },
-        zombieTank: {
-            left: [
-                "..OOOOOOOOOOOO..",
-                ".OgggggggggggOO.",
-                ".OgggggggggggOO.",
-                ".OWWWWWWWWWWWOOO",
-                ".OWWWWWWWWWWWOOO",
-                ".OWWWWWWWWWWWOOO",
-                ".OWWWWWWWWWWWGGG",
-                ".OWWWWWWWWWWWGGG",
-                ".OWWWWWWWWWWWGGG",
-                ".OWWWWWWWWWWWGGG",
-                ".OWWWWWWWWWWWGGG",
-                ".OWWWWWWWWWWWGGG",
-                ".OWWWWWWWWWWWGGG",
-                ".OGGGGGGGGGGGGGO",
-                "..OGGGGGGGGGGGGO",
-                "..OGGGGGGGGGGOO.",
-                "...OOOOOOOOOOO.."
-            ],
-            right: null
-        },
-        zombieTankUnshielded: {
-            left: [
-                "..OOOOOOOOOOOO..",
-                ".OgggggggggggOO.",
-                ".OgggggggggggOO.",
-                ".OgggggggggggOOO",
-                ".OgggggggggggOOO",
-                ".OgggggggggggOOO",
-                ".OgggggggggggGGG",
-                ".OgggggggggggGGG",
-                ".OgggggggggggGGG",
-                ".OgggggggggggGGG",
-                ".OgggggggggggGGG",
-                ".OgggggggggggGGG",
-                ".OgggggggggggGGG",
-                ".OGGGGGGGGGGGGGO",
-                "..OGGGGGGGGGGGGO",
-                "..OGGGGGGGGGGOO.",
-                "...OOOOOOOOOOO.."
             ],
             right: null
         },
@@ -468,11 +422,6 @@
                 ".a.",
                 "a.a",
                 ".a."
-            ],
-            shieldBreak: [
-                ".w.",
-                "w.w",
-                ".w."
             ]   
         }
     };
@@ -491,8 +440,6 @@
         'y': 'yellow',
         'l': 'bullet',
         'a': 'acid',              // Acid green for spitter projectiles
-        'w': 'white',             // White for shield break effect
-        'W': 'wood',              // Wood color for Tank zombie shield
     };
 
     // =====================================================
@@ -731,18 +678,6 @@
             lastAttackTime: -999,
             projectileSpeed: 120,
             projectileDamage: 12
-        },
-        zombieTank: {
-            width: 48,
-            height: 64,
-            speed: 25,
-            touchDamage: 20,
-            hitCooldown: 1.2,
-            maxHP: 120,
-            shieldHP: 80,
-            maxShieldHP: 80,
-            spriteKey: 'zombieTank'
-            // Tank zombie: Big, slow, high HP, carries wooden shield that must be destroyed first
         }
     };
 
@@ -1190,10 +1125,10 @@
                     hitBox.x, hitBox.y, hitBox.width, hitBox.height,
                     zombie.x, zombie.y, zombie.width, zombie.height
                 )) {
-                    const zombieDied = this.applyDamageToZombie(zombie, weapon.damage);
+                    zombie.hp = Math.max(0, zombie.hp - weapon.damage);
                     hitAny = true;
                     
-                    if (zombieDied) {
+                    if (zombie.hp <= 0) {
                         zombies.splice(i, 1);
                     }
                 }
@@ -1509,46 +1444,11 @@
                 if (zombiesSpawned < zombieCount) {
                     // Spawn from the right side of the screen
                     const x = this.game.canvas.width + 50; // Start off-screen to the right
-                    
-                    let type;
-                    
-                    // Wave-specific zombie type guarantees
-                    if (waveNumber === 1) {
-                        // Wave 1: Only regular zombies
-                        type = 'zombie';
-                    } else if (waveNumber === 2) {
-                        // Wave 2: At least 1 fat zombie, rest can be regular
-                        if (zombiesSpawned === 0) {
-                            type = 'zombieFat'; // First zombie is guaranteed fat
-                        } else {
-                            type = Math.random() < 0.7 ? 'zombie' : 'zombieFat';
-                        }
-                    } else if (waveNumber === 3) {
-                        // Wave 3: At least 1 spitter, rest can be regular or fat
-                        if (zombiesSpawned === 0) {
-                            type = 'zombieSpitter'; // First zombie is guaranteed spitter
-                        } else {
-                            const rand = Math.random();
-                            type = rand < 0.5 ? 'zombie' : (rand < 0.8 ? 'zombieFat' : 'zombieSpitter');
-                        }
-                    } else if (waveNumber === 4) {
-                        // Wave 4: At least 1 tank, rest can be any type
-                        if (zombiesSpawned === 0) {
-                            type = 'zombieTank'; // First zombie is guaranteed tank
-                        } else {
-                            const rand = Math.random();
-                            type = rand < 0.4 ? 'zombie' : (rand < 0.7 ? 'zombieFat' : (rand < 0.9 ? 'zombieSpitter' : 'zombieTank'));
-                        }
-                    } else {
-                        // Wave 5+: Mix of all types with tank being rare
-                        const rand = Math.random();
-                        type = rand < 0.4 ? 'zombie' : (rand < 0.7 ? 'zombieFat' : (rand < 0.9 ? 'zombieSpitter' : 'zombieTank'));
-                    }
-                    
+                    const type = Math.random() < 0.6 ? 'zombie' : (Math.random() < 0.8 ? 'zombieFat' : 'zombieSpitter');
                     this.game.spawnZombie(x, type);
                     
                     zombiesSpawned++;
-                    console.log(`Spawned zombie ${zombiesSpawned}/${zombieCount} for wave ${waveNumber} - Type: ${type}`);
+                    console.log(`Spawned zombie ${zombiesSpawned}/${zombieCount} for wave ${waveNumber}`);
                     
                     // Schedule next zombie spawn
                     if (zombiesSpawned < zombieCount) {
@@ -1934,26 +1834,9 @@
             const barY = Math.floor(entity.y) - 6;
             const hpRatio = entity.hp / entity.maxHP;
 
-            // Render shield health bar for tank zombies
-            if (entity.shieldHP !== undefined && entity.shieldHP > 0) {
-                const shieldBarY = barY - 8; // Position shield bar above the main health bar
-                const shieldRatio = entity.shieldHP / entity.maxShieldHP;
-                
-                // Shield background
-                this.ctx.fillStyle = '#444';
-                this.ctx.fillRect(barX, shieldBarY, barWidth, barHeight);
-                
-                // Shield health (wooden color)
-                this.ctx.fillStyle = shieldRatio > 0.5 ? '#8B4513' : 
-                                    (shieldRatio > 0.2 ? '#A0522D' : '#654321');
-                this.ctx.fillRect(barX, shieldBarY, Math.floor(barWidth * shieldRatio), barHeight);
-            }
-
-            // Main health bar background
             this.ctx.fillStyle = '#222';
             this.ctx.fillRect(barX, barY, barWidth, barHeight);
 
-            // Main health bar
             this.ctx.fillStyle = hpRatio > 0.5 ? PALETTE.hpHi : 
                                 (hpRatio > 0.2 ? PALETTE.hpMid : PALETTE.hpLow);
             this.ctx.fillRect(barX, barY, Math.floor(barWidth * hpRatio), barHeight);
@@ -2443,9 +2326,9 @@
                             Math.floor(bullet.damage * CONFIG.HEADSHOT_DAMAGE_MULTIPLIER) : 
                             bullet.damage;
                         
-                        const zombieDied = this.applyDamageToZombie(zombie, damage);
+                        zombie.hp = Math.max(0, zombie.hp - damage);
 
-                        if (zombieDied) {
+                        if (zombie.hp <= 0) {
                             zombies.splice(j, 1);
                         }
                         
@@ -2505,30 +2388,6 @@
             
             // Return true if the bullet hits a non-transparent pixel (not '.')
             return spriteChar !== '.';
-        }
-
-        applyDamageToZombie(zombie, damage) {
-            // Handle Tank zombie shield damage
-            if (zombie.shieldHP !== undefined && zombie.shieldHP > 0) {
-                // Damage goes to shield first
-                zombie.shieldHP = Math.max(0, zombie.shieldHP - damage);
-                
-                // Check if shield was just broken
-                if (zombie.shieldHP <= 0) {
-                    // Create shield break effect
-                    this.game.effectsManager.createHitEffect(zombie.x + zombie.width / 2, zombie.y + zombie.height / 2, 'shieldBreak');
-                    
-                    // Switch to unshielded sprite
-                    zombie.spriteKey = 'zombieTankUnshielded';
-                    
-                    return false; // Shield broken but zombie still alive
-                }
-                return false; // Shield damaged but not broken
-            } else {
-                // No shield or shield broken, damage goes to zombie health
-                zombie.hp = Math.max(0, zombie.hp - damage);
-                return zombie.hp <= 0; // Return true if zombie dies
-            }
         }
 
         checkHeadshot(bullet, zombie) {
@@ -2786,14 +2645,12 @@
             this.acidProjectiles = [];
         }
 
-                initializeSprites() {
-            SPRITES.player.right = Utils.flipSprite(SPRITES.player.left);
-            SPRITES.zombie.right = Utils.flipSprite(SPRITES.zombie.left);
-            SPRITES.zombieFat.right = Utils.flipSprite(SPRITES.zombieFat.left);
-            SPRITES.zombieSpitter.right = Utils.flipSprite(SPRITES.zombieSpitter.left);
-            SPRITES.zombieTank.right = Utils.flipSprite(SPRITES.zombieTank.left);
-            SPRITES.zombieTankUnshielded.right = Utils.flipSprite(SPRITES.zombieTankUnshielded.left);
-            SPRITES.merchant.right = Utils.flipSprite(SPRITES.merchant.left);
+        initializeSprites() {
+                    SPRITES.player.right = Utils.flipSprite(SPRITES.player.left);
+        SPRITES.zombie.right = Utils.flipSprite(SPRITES.zombie.left);
+        SPRITES.zombieFat.right = Utils.flipSprite(SPRITES.zombieFat.left);
+        SPRITES.zombieSpitter.right = Utils.flipSprite(SPRITES.zombieSpitter.left);
+        SPRITES.merchant.right = Utils.flipSprite(SPRITES.merchant.left);
         }
 
         setupCanvas() {
@@ -2893,12 +2750,6 @@
                 zombie.lastAttackTime = template.lastAttackTime;
                 zombie.projectileSpeed = template.projectileSpeed;
                 zombie.projectileDamage = template.projectileDamage;
-            }
-
-            // Add tank-specific properties
-            if (type === 'zombieTank') {
-                zombie.shieldHP = template.shieldHP;
-                zombie.maxShieldHP = template.maxShieldHP;
             }
 
             this.zombies.push(zombie);
