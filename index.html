@@ -1,0 +1,4955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="description" content="Zombie Survival - A pixel art action survival game">
+    <meta name="author" content="Cavedon">
+    <title>Zombie Survival - Alpha v4.0</title>
+    <style>
+        /* =====================================================
+           RESET & BASE STYLES
+           ===================================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            font-family: monospace;
+            touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        /* =====================================================
+           GAME CANVAS
+           ===================================================== */
+        #gameContainer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #000;
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            cursor: crosshair;
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
+            flex-shrink: 0;
+            font-smooth: never;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+        }
+
+        /* Mobile canvas will be sized dynamically via JavaScript */
+
+        /* =====================================================
+           MOBILE CONTROLS
+           ===================================================== */
+        .mobile-controls {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1000;
+            display: none;
+        }
+
+        .mobile-controls.active {
+            display: block;
+        }
+
+        .analog-stick {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 3px solid #ffd54a;
+            border-radius: 50%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .analog-stick::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 213, 74, 0.8);
+            border-radius: 50%;
+            transform: translate(calc(-50% + var(--stick-offset-x, 0px)), calc(-50% + var(--stick-offset-y, 0px)));
+            transition: all 0.1s ease;
+        }
+
+        .analog-stick.active::before {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translate(calc(-50% + var(--stick-offset-x, 0px)), calc(-50% + var(--stick-offset-y, 0px))) scale(1.2);
+        }
+        
+        .analog-stick.left {
+            top: 50%;
+            left: 30px;
+            transform: translateY(-50%);
+        }
+
+        .mobile-buttons {
+            position: absolute;
+            bottom: 170px;
+            right: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: auto;
+        }
+
+        .mobile-button {
+            width: 60px;
+            height: 60px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffd54a;
+            border-radius: 50%;
+            color: #fff;
+            font-family: monospace;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .mobile-button:active {
+            background: rgba(255, 213, 74, 0.3);
+            transform: scale(0.95);
+        }
+
+        .mobile-button.jump {
+            background: rgba(0, 100, 0, 0.8);
+            border-color: #4caf50;
+        }
+
+        .mobile-button.reload {
+            background: rgba(100, 0, 0, 0.8);
+            border-color: #f44336;
+        }
+
+        .mobile-button.shop {
+            background: rgba(0, 0, 100, 0.8);
+            border-color: #2196f3;
+        }
+
+        .mobile-button.weapon {
+            background: rgba(100, 100, 0, 0.8);
+            border-color: #ff9800;
+        }
+
+        /* =====================================================
+           UI COMPONENTS
+           ===================================================== */
+        .ui-button {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffd54a;
+            border-radius: 8px;
+            padding: 10px;
+            color: #fff;
+            font-family: monospace;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+        }
+
+        .ui-button:hover {
+            background: rgba(0, 0, 0, 0.9);
+            border-color: #fff;
+            transform: scale(1.05);
+        }
+
+        .ui-button:active {
+            transform: scale(0.95);
+        }
+
+
+
+        /* =====================================================
+           SHOP INTERFACE
+           ===================================================== */
+        #shopInterface {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            border: 3px solid #00ff00;
+            border-radius: 12px;
+            padding: 20px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 14px;
+            z-index: 200;
+            display: none;
+            min-width: 500px;
+            max-width: 90vw;
+            max-height: 90vh;
+            text-align: center;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            overflow-y: auto;
+        }
+
+        #shopInterface h2 {
+            color: #00ff00;
+            margin-bottom: 20px;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        }
+
+        .menuContainer {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .menuOption {
+            background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: center;
+        }
+
+        .menuOption:hover {
+            border-color: #00ff40;
+            background: linear-gradient(145deg, #003300, #001a00);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 255, 0, 0.3);
+        }
+
+        .menuOptionName {
+            font-size: 18px;
+            font-weight: bold;
+            color: #00ff00;
+            margin-bottom: 8px;
+        }
+
+        .menuOptionDesc {
+            font-size: 14px;
+            color: #00cc00;
+        }
+
+        .shopItemsContainer {
+            display: table;
+            width: 100%;
+            margin: 20px 0;
+            border-collapse: collapse;
+        }
+
+        .shopTableRow {
+            display: table-row;
+        }
+
+        .shopTableHeader {
+            display: table-cell;
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 255, 0, 0.2);
+            border: 2px solid #00ff00;
+            font-weight: bold;
+            color: #fff;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+
+        .shopTableCell {
+            display: table-cell;
+            vertical-align: top;
+            padding: 10px;
+            border: 1px solid #00ff00;
+            width: 50%;
+        }
+
+        .shopTableHeader:first-child {
+            border-top-left-radius: 8px;
+        }
+
+        .shopTableHeader:last-child {
+            border-top-right-radius: 8px;
+        }
+
+        .shopTableCell:first-child {
+            border-bottom-left-radius: 8px;
+        }
+
+        .shopTableCell:last-child {
+            border-bottom-right-radius: 8px;
+        }
+
+        .shopItem {
+            background: rgba(0, 255, 0, 0.1);
+            border: 2px solid #00ff00;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: block;
+            width: 100%;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: manipulation;
+        }
+
+        .shopItem:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: #fff;
+            transform: scale(1.02);
+        }
+
+        .shopItem.selected {
+            border-color: #00ff40;
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 16px rgba(0, 255, 0, 0.5);
+        }
+
+        .shopItem[disabled] {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .shopItemInfo {
+            text-align: left;
+        }
+
+        .shopItemName {
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .shopItemStats {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        .slotSelectionButtons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .slotButton {
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            border-radius: 4px;
+            color: #00ff00;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            transition: all 0.2s;
+            font-family: "Courier New", monospace;
+        }
+
+        .slotButton:hover {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #00ff40;
+        }
+
+        .slotButton.equipped {
+            background: rgba(255, 255, 0, 0.2);
+            border-color: #ffff00;
+            color: #ffff00;
+        }
+
+        .slotButton.selected {
+            background: rgba(0, 255, 0, 0.3);
+            border-color: #00ff40;
+            box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
+        }
+
+        .shopControls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #555;
+        }
+
+        .shopButton {
+            background: #000;
+            color: #00ff00;
+            border: 2px solid #00ff00;
+            border-radius: 6px;
+            padding: 15px 25px;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 0 10px;
+            transition: all 0.2s;
+            user-select: none;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            touch-action: manipulation;
+            min-height: 50px;
+            min-width: 120px;
+        }
+
+        .shopButton:hover {
+            background: #00ff00;
+            color: #000;
+            transform: scale(1.05);
+            box-shadow: 0 4px 12px rgba(0, 255, 0, 0.4);
+        }
+
+        .shopButton:disabled {
+            background: #222;
+            color: #666;
+            border-color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        
+        /* Mobile-specific shop improvements */
+        .shopItem:hover {
+            background: rgba(0, 255, 0, 0.2);
+            border-color: #00ff40;
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0, 255, 0, 0.3);
+        }
+        
+        .shopItem:active {
+            transform: scale(0.98);
+            background: rgba(0, 255, 0, 0.3);
+        }
+        
+        .shopButton:active {
+            transform: scale(0.95);
+            background: #00cc00;
+            color: #000;
+        }
+
+        /* =====================================================
+           LOADING SCREEN
+           ===================================================== */
+        #loadingScreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            font-size: 24px;
+            z-index: 1000;
+            transition: opacity 0.3s;
+        }
+
+        .hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        /* =====================================================
+           MOBILE RESPONSIVE
+           ===================================================== */
+        @media (max-width: 768px) {
+            #shopInterface {
+                min-width: 95vw;
+                max-width: 95vw;
+                padding: 20px;
+                border-radius: 8px;
+                border-width: 2px;
+            }
+            
+            #shopInterface h2 {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+            
+            .menuContainer {
+                gap: 12px;
+                margin: 15px 0;
+            }
+            
+            .menuOption {
+                padding: 15px;
+            }
+            
+            .menuOptionName {
+                font-size: 16px;
+            }
+            
+            .menuOptionDesc {
+                font-size: 13px;
+            }
+            
+            .shopItemsContainer {
+                flex-direction: column;
+                gap: 8px;
+                margin: 15px 0;
+            }
+            
+            .shopItem {
+                min-width: auto;
+                max-width: none;
+                margin: 5px 0;
+                padding: 20px;
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+            
+            .shopItemInfo {
+                text-align: center;
+                width: 100%;
+            }
+            
+            .shopItemName {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .shopItemStats {
+                font-size: 14px;
+            }
+            
+            .shopControls {
+                margin-top: 15px;
+                padding-top: 15px;
+            }
+            
+            .shopButton {
+                padding: 18px 20px;
+                font-size: 18px;
+                margin: 5px;
+                min-height: 60px;
+                min-width: 140px;
+            }
+
+            /* Mobile table layout adjustments */
+            .shopItemsContainer {
+                display: block;
+            }
+            
+            .shopTableRow {
+                display: block;
+                margin-bottom: 20px;
+            }
+            
+            .shopTableHeader,
+            .shopTableCell {
+                display: block;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            .shopTableHeader {
+                text-align: center;
+                margin-bottom: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            #shopInterface {
+                padding: 15px;
+                min-width: 98vw;
+                max-width: 98vw;
+            }
+            
+            #shopInterface h2 {
+                font-size: 18px;
+            }
+            
+            .menuOption {
+                padding: 12px;
+            }
+            
+            .menuOptionName {
+                font-size: 15px;
+            }
+            
+            .menuOptionDesc {
+                font-size: 12px;
+            }
+            
+            .shopItem {
+                padding: 15px;
+            }
+            
+            .shopItemName {
+                font-size: 15px;
+            }
+            
+            .shopItemStats {
+                font-size: 13px;
+            }
+            
+            .shopButton {
+                padding: 16px 18px;
+                font-size: 16px;
+                min-height: 55px;
+                min-width: 130px;
+            }
+        }
+        
+        /* =====================================================
+           MOBILE ROTATION MESSAGE
+           ===================================================== */
+        .rotation-message {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            color: white;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .rotation-content {
+            text-align: center;
+            padding: 40px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #ffd54a;
+            border-radius: 12px;
+            max-width: 80%;
+        }
+        
+        .rotation-icon {
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: rotate-hint 2s ease-in-out infinite;
+        }
+        
+        @keyframes rotate-hint {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(10deg); }
+        }
+        
+        .rotation-content h3 {
+            color: #ffd54a;
+            font-size: 24px;
+            margin: 20px 0 10px 0;
+            font-weight: bold;
+        }
+        
+        .rotation-content p {
+            color: #ccc;
+            font-size: 16px;
+            margin: 0;
+            line-height: 1.5;
+        }
+        
+        /* Show rotation message only on mobile portrait */
+        @media (orientation: portrait) and (pointer: coarse) and (max-width: 768px) {
+            .rotation-message {
+                display: flex;
+            }
+        }
+        
+        /* Hide rotation message in landscape */
+        @media (orientation: landscape) {
+            .rotation-message {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="loadingScreen">Loading...</div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+
+    </div>
+    
+    <!-- Mobile Portrait Rotation Message -->
+    <div id="rotationMessage" class="rotation-message">
+        <div class="rotation-content">
+            <div class="rotation-icon">📱➡️📱</div>
+            <h3>Rotate for Better Experience</h3>
+            <p>This game is optimized for landscape mode</p>
+        </div>
+    </div>
+    
+    <!-- Mobile Controls -->
+    <div class="mobile-controls" id="mobileControls">
+        <div class="analog-stick left" id="leftStick"></div>
+        <div class="mobile-buttons">
+            <div class="mobile-button shop" id="shopButton">E</div>
+            <div class="mobile-button weapon" id="weaponButton">WEAPON</div>
+            <div class="mobile-button reload" id="reloadButton">RELOAD</div>
+        </div>
+    </div>
+    
+    <!-- Computer Interface -->
+    <div id="shopInterface">
+        <!-- Main Menu -->
+        <div id="mainMenu">
+            <h2>COMPUTER TERMINAL</h2>
+            <div class="menuContainer">
+                <div class="menuOption" id="startWaveOption">
+                    <div class="menuOptionName">START WAVE <span id="currentWaveNumber">1</span></div>
+                    <div class="menuOptionDesc">Begin zombie attack waves</div>
+                </div>
+                <div class="menuOption" id="weaponShopOption">
+                    <div class="menuOptionName">WEAPON SHOP</div>
+                    <div class="menuOptionDesc">Access weapon equipment</div>
+                </div>
+            </div>
+            <div class="shopControls">
+                <button id="closeShopButton" class="shopButton">CLOSE</button>
+            </div>
+        </div>
+        
+        <!-- Weapon Shop -->
+        <div id="weaponShop" style="display: none;">
+            <h2>WEAPON SHOP</h2>
+            <div class="shopItemsContainer">
+                <div id="shopItems"></div>
+            </div>
+            <div class="shopControls">
+                <button id="backToMenuButton" class="shopButton">BACK</button>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+    'use strict';
+
+    // =====================================================
+    // GAME CONFIGURATION
+    // =====================================================
+    const CONFIG = {
+        // Version
+        GAME_VERSION: '3.0.0-alpha',
+        DEBUG_MODE: false,
+        
+        // Physics
+        GRAVITY: 2000,
+        BULLET_GRAVITY: 120,
+        PLAYER_MOVE_SPEED: 160,
+        PLAYER_JUMP_SPEED: 540,
+        
+        // World
+        WORLD_WIDTH: 1280,
+        WORLD_HEIGHT: 720,
+        
+        // Mobile World (optimized for mobile screens)
+        MOBILE_WORLD_WIDTH: 915,
+        MOBILE_WORLD_HEIGHT: 412,
+        GROUND_HEIGHT: 40,
+        GROUND_COLLISION_OFFSET: -6,
+        
+        // Visual
+        SCREEN_SHAKE_DECAY: 40,
+        CLOUD_SPEED: 0.04,
+        CLOUD_SPACING: 600,
+        CLOUD_PIXEL_SIZE: 40,
+        
+        // Player
+        PLAYER_WIDTH: 30,
+        PLAYER_HEIGHT: 40,
+        PLAYER_MAX_HP: 100,
+        PLAYER_START_X: 60,
+        
+        // Combat
+        HEADSHOT_DAMAGE_MULTIPLIER: 2.5,
+        HEADSHOT_ZONE_HEIGHT_RATIO: 0.15,
+        
+        // Timing
+        WAVE_DELAY: 2000,
+        RESTART_DELAY: 300,
+        INITIAL_SETUP_DELAY: 50,
+        LOADING_HIDE_DELAY: 100,
+        ZOMBIE_SPAWN_DELAY: 1500,
+        ZOMBIE_SPAWN_INITIAL_DELAY: 1000,
+        
+        // UI
+        HP_BAR_WIDTH: 260,
+        HP_BAR_HEIGHT: 16,
+        WEAPON_SLOT_WIDTH: 110,
+        WEAPON_SLOT_HEIGHT: 36,
+        WEAPON_SLOT_PADDING: 6,
+        
+        // Computer (moved to left corner)
+        MERCHANT_X: 50,
+        MERCHANT_INTERACTION_RANGE: 80,
+        
+        // Mobile
+        MOBILE_ANALOG_DEADZONE: 0.1,
+        MOBILE_ANALOG_SENSITIVITY: 1.5
+    };
+
+    // =====================================================
+    // COLOR PALETTE
+    // =====================================================
+    const PALETTE = {
+        // UI Colors
+        outline: '#1a1c2c',
+        white: '#fff',
+        black: '#000',
+        
+        // Character Colors
+        skin: '#ffd37d',
+        blue: '#2490ff',
+        blueDark: '#0b4aa8',
+        
+        // Enemy Colors
+        zombieFlesh: '#8b8b8b',
+        zombieFleshDark: '#5a5a5a',
+        zombieFleshLight: '#b0b0b0',
+        
+        // Environment Colors
+        ground: '#27401f',
+        groundHi: '#48a63f',
+        bgNear: '#1d2230',
+        bgFar: '#131822',
+        cloudDark: '#131822',
+        
+        // Combat Colors
+        red: '#e53935',
+        hpHi: '#7CFC00',
+        hpMid: '#ffb74d',
+        hpLow: '#ef5350',
+        bullet: '#ffe66d',
+        bulletPellet: '#ffcc00',
+        muzzleFlash: '#fff9c4',
+        
+        // Effect Colors
+        acid: '#00ff00',
+        headshot: '#ff0000',
+        yellow: '#ffeb3b',
+        wood: '#bc6a3c',
+        gunMetal: '#2a2a2a'
+    };
+
+    // =====================================================
+    // ASSET DATA
+    // =====================================================
+    const SPRITES = {
+        player: {
+            left: [
+                "..OOOOOOOO..",".OssssssOOO.",".OssssssOOOO",
+                ".OssssssOOOO",".OssssssOOOO",".OssssssbbbO",".OssssssbbbO",
+                ".OssssssbbbO",".OssssssbbbO",".OssssssbbbO",".OssssssbbbO",
+                ".ObbbbbbbbbO",".ObbbbbbbOO.","..OOOOOOOO.."
+            ],
+            right: null
+        },
+        zombie: {
+            left: [
+                "..OOOOOOOO..",".OggggggOOO.",".OggggggOOOO",
+                ".OggggggOOOO",".OggggggOOOO",".OggggggGGGO",".OggggggGGGO",
+                ".OggggggGGGO",".OggggggGGGO",".OggggggGGGO",".OggggggGGGO",
+                ".OggggggGGGO",".OGGGGGGGOO.","..OOOOOOOO.."
+            ],
+            right: null
+        },
+        zombieFat: {
+            left: [
+                "....OOOOOOOOOOOO....",
+                ".OOOggggggggggggOOO.",
+                ".OggggggggggggggggO.",
+                ".OggggggggggggggggO.",
+                ".OggggggggggggGGGGO.",
+                ".OggggggggGGGGGGGGO.",
+                ".OggggGGGGGGGGGGGGO.",
+                ".OggGGGGGGGGGGGGGGO.",
+                ".OgGGGGGGGGGGGGGGGO.",
+                ".OGGGGGGGGGGGGGGGGOO",
+                "..OOOOOOOOOOOOOOOOOO"
+            ],
+            right: null
+        },
+        zombieSpitter: {
+            left: [
+                "....OOOOOO....",
+                "..OOaaaaaOOO..",
+                ".OaaaaaaaaOOO.",
+                ".OaaaaaaaagOOO",
+                ".OaaaagggggOOO",
+                ".OaaggggggGOOO",
+                ".OagggggggGGOO",
+                ".OggggggggGGGO",
+                ".OgggaaaaGGGGO",
+                ".OggaaaaaGGGGO",
+                ".OgaaaaaagGGGO",
+                ".OgggggggGGGGO",
+                ".OggggggGGGGGO",
+                "..OGGGGGGGGGO.",
+                "..OOOOOOOOOOO."
+            ],
+            right: null
+        },
+        zombieTank: {
+            left: [
+  "....OOOOOOOOOOOO....",
+  "..OOgggggggggggOO...",
+  ".OgggggggggggggggO..",
+  ".OgggggggggggggggOO.",
+  ".OgggggmmmgggggggOO.",
+  ".OggggmmmmmmgggggOO.",
+  ".OgggmmmmmmmmmgggOO.",
+  ".OmmmmmmmmmmmmmmmOO.",
+  ".OmmmmmmmmmmmmmmmOO.",
+  ".OmmmmmmmmmmmmmmmOO.",
+  ".OgggmmmmmmmmmgggOO.",
+  ".OggggmmmmmmgggggOO.",
+  ".OggggmmgggmgggggOO.",
+  "..OgggmmgggmggggOO..",
+  "..OOOOOOOOOOOOOOO..."
+],
+            right: null
+        },
+        zombieTankUnshielded: {
+            left: [
+  "....OOOOOOOOOOOO....",
+  "..OOgggggggggggOO...",
+  ".OgggggggggggggggO..",
+  ".OgggggggggggggggOO.",
+  ".OgggggggggggggggOO.",
+  ".OgggggggggggggggOO.",
+  ".OgggggggggggggggOO.",
+  ".OmgggggggggggggmOO.",
+  ".OmmmggggggggggmmOO.",
+  ".OmmmmggggggggmmmOO.",
+  ".OgggmmggggggggggOO.",
+  ".OggggmggggggggggOO.",
+  ".OggggmggggggggggOO.",
+  "..OgggmmggggggggOO..",
+  "..OOOOOOOOOOOOOOO..."
+],
+            right: null
+        },
+        zombieWorm: {
+            left: [
+                "..OOOOOOOOOO..",
+                ".OggggggggGO.",
+                "OggggggggggO.",
+                "OggGggggGggO.",
+                "OggggggggggO.",
+                ".OOOOOOOOOO.."
+            ],
+            right: null
+        },
+        computer: {
+            left: [
+  "wwwwwwwwwwww",
+  "wmmmmmmmmmmw",
+  "wmmmmmmmmmmw",
+  "wmaaaaaaaamw",
+  "wmmmmmmmmmmw",
+  "wmmmmmmmmmmw",
+  "wmaaaaaaaamw",
+  "wmmmmmmmmmmw",
+  "wmmmmmmmmmmw",
+  "wmmmmmmmmmmw",
+  "wwwwwwwwwwww",
+  "wwwwwwwwwwww",
+  "wOOOOOOOOOOw",
+  "wwwwwwwwwwww"
+],
+            right: null
+        },
+        weapons: {
+            assaultRifle: ["...b....","bbbbbbbb","bbb.b...","....b..."],
+            pistol: [".bbbbb..","..bb....","..b....."],
+            knife: ["....b...","....b...","...bbb..","....b..."],
+            shotgun: ["bbbbbbbb","b..bbbb."],
+            minigun: [".bb.........",".b..........",".bbb.b.b.bb.",".bbbbbbbbbb.",".bbb.b.b.bb."],
+            sniperRifle: ["...bbb....","bbbbbbbbbb","bbb......."],
+            smg: ["...b....",".bbbbbb.",".b..b...","....b..."]
+        },
+        effects: {
+            blood: ["..r.....",".rrr...","..r....."],
+            spark: ["..y.....",".yyy...","..y....."],
+            headshot: [
+                "r.r.r",
+                ".rrr.",
+                "r.r.r",
+                ".r.r.",
+                "r...r"
+            ],
+            acid: ["..aa..",".aaaa.","aaaaa.","aaaaa.","..aa.."],
+            shieldBreak: [".w.","w.w",".w."],
+            fatExplosion: [
+                "..r.....r..........r",
+                ".rr..r....rr.....r..",
+                "..rrrr..rrrrrr..rr..",
+                ".rrrrrrrrrrrrrrrrr..",
+                "rrrrrrrrrrrrrrrrrrrr",
+                "rrrrrrrrrrrrrrrrrr..",
+                "rrrrrrrrrrrrrrrrr...",
+                ".rrrrrrrrrrrrrr.....",
+                "..rrrrrrrrrrr.......",
+                "...rrrr..rrr..r.....",
+                ".r..r....r.........."
+            ]
+        }
+    };
+
+    const SPRITE_COLOR_MAP = {
+        'O': 'outline',
+        's': 'skin',
+        'b': 'blue',
+        'B': 'blueDark',
+        'g': 'zombieFlesh',
+        'G': 'zombieFleshDark',
+        'r': 'red',
+        'y': 'yellow',
+        'l': 'bullet',
+        'a': 'acid',
+        'w': 'white',
+        'W': 'wood',
+        'm': 'gunMetal'
+    };
+
+    const CLOUD_SPRITES = [
+        ["..bb...",".bbbbb.","bbbbbbb","bbbbbbb",".bbbbb.","..bb..."],
+        ["...bb..","..bbbb.","bbbbbbb","bbbbbbb","..bbbb.","...bb.."],
+        ["..bbbb..",".bbbbbbb.","bbbbbbbbb","bbbbbbbbb",".bbbbbbb.","..bbbb.."],
+        ["...bbbb...","..bbbbbbb..",".bbbbbbbbb.","bbbbbbbbbb",".bbbbbbbbb.","..bbbbbbb..","...bbbb..."],
+        ["..bbbbbb..",".bbbbbbbbb.","bbbbbbbbbbb","bbbbbbbbbbb","bbbbbbbbbbb",".bbbbbbbbb.","..bbbbbb.."],
+        ["...bbbbbb...","..bbbbbbbbb..",".bbbbbbbbbbb.","bbbbbbbbbbbb","bbbbbbbbbbbb",".bbbbbbbbbbb.","..bbbbbbbbb..","...bbbbbb..."],
+        ["..b.bb..",".bbbbbb.","bbbbbbbb","bbbbbbbb",".bbbbbb.","..b.bb.."],
+        ["...b.bb...","..bbbbbb..",".bbbbbbbb.","bbbbbbbbbb",".bbbbbbbb.","..bbbbbb..","...b.bb..."],
+        ["....bb....","...bbbb...","..bbbbbb..",".bbbbbbbb.","..bbbbbb..","...bbbb...","....bb...."],
+        [".....bb.....","....bbbb....","...bbbbbb...","..bbbbbbbb..","...bbbbbb...","....bbbb....",".....bb....."]
+    ];
+
+    // =====================================================
+    // GAME DATA
+    // =====================================================
+    const WEAPONS = {
+        rifle: {
+            id: 'rifle_mk1',
+            name: 'Assault Rifle',
+            type: 'main',
+            damage: 7,
+            fireRate: 10,
+            bulletSpeed: 1100,
+            recoilKick: 10,
+            knockback: 140,
+            flashTime: 0.05,
+            effectiveRange: 800,
+            accuracy: 0.95,
+            sprite: 'assaultRifle',
+            ammo: { current: 30, max: 30, reserve: Infinity, type: 'rifle_ammo' },
+            reloadTime: 2.5
+        },
+        pistol: {
+            id: 'pistol_basic',
+            name: 'Pistol',
+            type: 'side',
+            damage: 5,
+            fireRate: 4,
+            bulletSpeed: 900,
+            recoilKick: 6,
+            knockback: 90,
+            flashTime: 0.04,
+            effectiveRange: 400,
+            accuracy: 0.85,
+            sprite: 'pistol',
+            ammo: { current: 15, max: 15, reserve: Infinity, type: 'pistol_ammo' },
+            reloadTime: 1.8
+        },
+        knife: {
+            id: 'knife_mk1',
+            name: 'Combat Knife',
+            type: 'side',
+            damage: 15,
+            range: 32,
+            cooldown: 0.38,
+            sprite: 'knife',
+            ammo: { current: Infinity, max: Infinity, reserve: Infinity, type: 'melee_durability' },
+            reloadTime: 0
+        },
+        shotgun: {
+            id: 'shotgun_basic',
+            name: 'Shotgun',
+            type: 'main',
+            damage: 36,
+            fireRate: 1.5,
+            bulletSpeed: 700,
+            recoilKick: 20,
+            knockback: 250,
+            flashTime: 0.1,
+            effectiveRange: 250,
+            accuracy: 0.65,
+            sprite: 'shotgun',
+            pelletCount: 6,
+            spreadAngle: Math.PI * 0.15,
+            ammo: { current: 8, max: 8, reserve: Infinity, type: 'shotgun_shells' },
+            reloadTime: 3.2
+        },
+        smg: {
+            id: 'smg_basic',
+            name: 'SMG',
+            type: 'side',
+            damage: 4,
+            fireRate: 15,
+            bulletSpeed: 950,
+            recoilKick: 8,
+            knockback: 80,
+            flashTime: 0.03,
+            effectiveRange: 350,
+            accuracy: 0.75,
+            sprite: 'smg',
+            ammo: { current: 25, max: 25, reserve: Infinity, type: 'smg_ammo' },
+            reloadTime: 1.8
+        },
+        sniper: {
+            id: 'sniper_basic',
+            name: 'Sniper Rifle',
+            type: 'main',
+            damage: 50,
+            fireRate: 1,
+            bulletSpeed: 2500,
+            recoilKick: 25,
+            knockback: 300,
+            flashTime: 0.08,
+            effectiveRange: 1200,
+            accuracy: 0.99,
+            sprite: 'sniperRifle',
+            ammo: { current: 5, max: 5, reserve: Infinity, type: 'sniper_ammo' },
+            reloadTime: 3.5
+        },
+        minigun: {
+            id: 'minigun_basic',
+            name: 'Minigun',
+            type: 'main',
+            damage: 6,
+            fireRate: 20,
+            bulletSpeed: 1000,
+            recoilKick: 15,
+            knockback: 120,
+            flashTime: 0.02,
+            effectiveRange: 600,
+            accuracy: 0.70,
+            sprite: 'minigun',
+            ammo: { current: 100, max: 100, reserve: Infinity, type: 'minigun_ammo' },
+            reloadTime: 4.0
+        }
+    };
+
+    const SHOP_ITEMS = {
+        shotgun: {
+            id: 'shotgun_basic',
+            name: 'Shotgun',
+            type: 'main',
+            price: 0,
+            weapon: { ...WEAPONS.shotgun },
+            stats: `DMG: ${WEAPONS.shotgun.damage} | RATE: ${WEAPONS.shotgun.fireRate}/s | RANGE: ${WEAPONS.shotgun.effectiveRange}`
+        },
+        assaultRifle: {
+            id: 'rifle_mk1',
+            name: 'Assault Rifle',
+            type: 'main',
+            price: 0,
+            weapon: { ...WEAPONS.rifle },
+            stats: `DMG: ${WEAPONS.rifle.damage} | RATE: ${WEAPONS.rifle.fireRate}/s | RANGE: ${WEAPONS.rifle.effectiveRange}`
+        },
+        smg: {
+            id: 'smg_basic',
+            name: 'SMG',
+            type: 'side',
+            price: 0,
+            weapon: { ...WEAPONS.smg },
+            stats: `DMG: ${WEAPONS.smg.damage} | RATE: ${WEAPONS.smg.fireRate}/s | RANGE: ${WEAPONS.smg.effectiveRange}`
+        },
+        sniper: {
+            id: 'sniper_basic',
+            name: 'Sniper Rifle',
+            type: 'main',
+            price: 0,
+            weapon: { ...WEAPONS.sniper },
+            stats: `DMG: ${WEAPONS.sniper.damage} | RATE: ${WEAPONS.sniper.fireRate}/s | RANGE: ${WEAPONS.sniper.effectiveRange}`
+        },
+        minigun: {
+            id: 'minigun_basic',
+            name: 'Minigun',
+            type: 'main',
+            price: 0,
+            weapon: { ...WEAPONS.minigun },
+            stats: `DMG: ${WEAPONS.minigun.damage} | RATE: ${WEAPONS.minigun.fireRate}/s | RANGE: ${WEAPONS.minigun.effectiveRange}`
+        },
+        pistol: {
+            id: 'pistol_basic',
+            name: 'Pistol',
+            type: 'side',
+            price: 0,
+            weapon: { ...WEAPONS.pistol },
+            stats: `DMG: ${WEAPONS.pistol.damage} | RATE: ${WEAPONS.pistol.fireRate}/s | RANGE: ${WEAPONS.pistol.effectiveRange}`
+        },
+        knife: {
+            id: 'knife_mk1',
+            name: 'Combat Knife',
+            type: 'side',
+            price: 0,
+            weapon: { ...WEAPONS.knife },
+            stats: `DMG: ${WEAPONS.knife.damage} | RATE: ${WEAPONS.knife.fireRate}/s | RANGE: ${WEAPONS.knife.effectiveRange}`
+        }
+    };
+
+    const ENEMY_TYPES = {
+        zombie: {
+            width: 30,
+            height: 40,
+            speed: 55,
+            touchDamage: 10,
+            hitCooldown: 0.6,
+            maxHP: 30,
+            spriteKey: 'zombie'
+        },
+        zombieFat: {
+            width: 50, // Wider to match the fatter sprite
+            height: 44, // Shorter to match the reduced sprite height
+            speed: 35,
+            touchDamage: 15,
+            hitCooldown: 0.8,
+            maxHP: 80,
+            spriteKey: 'zombieFat'
+        },
+        zombieSpitter: {
+            width: 30,
+            height: 40,
+            speed: 40,
+            touchDamage: 5,
+            hitCooldown: 1.0,
+            maxHP: 45,
+            spriteKey: 'zombieSpitter',
+            attackRange: 200,
+            attackCooldown: 2.0,
+            projectileSpeed: 420,
+            projectileDamage: 12
+        },
+        zombieTank: {
+            width: 48,
+            height: 64,
+            speed: 25,
+            touchDamage: 20,
+            hitCooldown: 1.2,
+            maxHP: 120,
+            shieldHP: 200,
+            maxShieldHP: 200,
+            spriteKey: 'zombieTank'
+        },
+        zombieWorm: {
+            width: 20,
+            height: 12,
+            speed: 120, // Very fast
+            touchDamage: 5,
+            hitCooldown: 0.3,
+            maxHP: 15, // Low health
+            spriteKey: 'zombieWorm'
+        }
+    };
+
+    const WAVE_ZOMBIE_TYPES = {
+        1: ['zombie'],
+        2: ['zombieFat', 'zombie'],
+        3: ['zombieSpitter', 'zombie', 'zombieFat'],
+        4: ['zombieTank', 'zombie', 'zombieFat', 'zombieSpitter'],
+        5: ['zombie', 'zombieFat', 'zombieSpitter', 'zombieTank']
+    };
+
+    // =====================================================
+    // MOBILE DETECTION & UTILITIES
+    // =====================================================
+    class MobileDetector {
+        static isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+                   ('ontouchstart' in window) ||
+                   (navigator.maxTouchPoints > 0);
+        }
+        
+        static isPortrait() {
+            return window.innerHeight > window.innerWidth;
+        }
+        
+        static getDevicePixelRatio() {
+            return window.devicePixelRatio || 1;
+        }
+        
+        static getWorldWidth() {
+            if (!this.isMobile()) return CONFIG.WORLD_WIDTH;
+            
+            // For mobile, use actual screen width for perfect fit
+            return window.innerWidth;
+        }
+        
+        static getWorldHeight() {
+            if (!this.isMobile()) return CONFIG.WORLD_HEIGHT;
+            
+            // For mobile, use actual screen height for perfect fit
+            return window.innerHeight;
+        }
+    }
+
+    // =====================================================
+    // UTILITY FUNCTIONS
+    // =====================================================
+    class Utils {
+        static clamp(value, min, max) {
+            return Math.max(min, Math.min(max, value));
+        }
+
+        static flipSprite(sprite) {
+            return sprite.map(row => row.split('').reverse().join(''));
+        }
+
+        static checkCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+            return x1 < x2 + w2 && x1 + w1 > x2 && 
+                   y1 < y2 + h2 && y1 + h1 > y2;
+        }
+
+        static checkEntityCollision(a, b) {
+            return this.checkCollision(
+                a.x, a.y, a.width, a.height,
+                b.x, b.y, b.width, b.height
+            );
+        }
+
+        static getGroundY(canvasHeight, entityHeight) {
+            return canvasHeight - CONFIG.GROUND_HEIGHT - CONFIG.GROUND_COLLISION_OFFSET - entityHeight;
+        }
+
+        static rotateVector(dirX, dirY, angle) {
+            const cos = Math.cos(angle);
+            const sin = Math.sin(angle);
+            return {
+                x: dirX * cos - dirY * sin,
+                y: dirX * sin + dirY * cos
+            };
+        }
+
+        static normalizeVector(x, y) {
+            const length = Math.hypot(x, y) || 1;
+            return { x: x / length, y: y / length };
+        }
+
+        static getDirection(fromX, fromY, toX, toY) {
+            const dx = toX - fromX;
+            const dy = toY - fromY;
+            return this.normalizeVector(dx, dy);
+        }
+
+        static getDistance(x1, y1, x2, y2) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+
+        static shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+    }
+
+    // =====================================================
+    // AUDIO MANAGER
+    // =====================================================
+    class AudioManager {
+        constructor() {
+            this.audioContext = null;
+            this.soundConfigs = {
+                // Weapon-specific sounds with different frequencies
+                pistol: { duration: 0.08, decay: 40, gain: 0.3, frequency: 800 },
+                rifle: { duration: 0.1, decay: 35, gain: 0.4, frequency: 600 },
+                shotgun: { duration: 0.12, decay: 30, gain: 0.5, frequency: 400 },
+                smg: { duration: 0.06, decay: 45, gain: 0.35, frequency: 700 },
+                sniper: { duration: 0.15, decay: 25, gain: 3.0, frequency: 200 },
+                minigun: { duration: 0.05, decay: 50, gain: 0.25, frequency: 650 },
+                melee: { duration: 0.12, decay: 25, gain: 0.4, frequency: 1200 },
+                empty: { duration: 0.06, decay: 150, gain: 0.3, frequency: 1500 },
+                // Satisfying hit sounds for player feedback
+                bodyHit: { duration: 0.08, decay: 30, gain: 0.4, frequency: 600, harmonics: [800, 1200] },
+                headshot: { duration: 0.12, decay: 20, gain: 0.6, frequency: 800, harmonics: [1200, 1600, 2400] }
+            };
+        }
+
+        init() {
+            if (!this.audioContext) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    this.audioContext = new AudioContext();
+                }
+            }
+        }
+
+        playSound(type) {
+            if (!this.audioContext) return;
+
+            const config = this.soundConfigs[type];
+            if (!config) return;
+
+            if (type === 'empty') {
+                this.playEmptyClick(config);
+            } else if (type === 'melee') {
+                this.playMeleeSound(config);
+            } else if (type === 'bodyHit' || type === 'headshot') {
+                this.playHitSound(config);
+            } else {
+                this.playWeaponSound(config);
+            }
+        }
+
+        playWeaponSound(config) {
+            const buffer = this.createWeaponBuffer(config.duration, config.decay, config.frequency);
+            this.playBuffer(buffer, config.gain);
+        }
+
+        playMeleeSound(config) {
+            const buffer = this.createMeleeBuffer(config.duration, config.decay, config.frequency);
+            this.playBuffer(buffer, config.gain);
+        }
+
+        playHitSound(config) {
+            const buffer = this.createHitBuffer(config.duration, config.decay, config.frequency, config.harmonics);
+            this.playBuffer(buffer, config.gain);
+        }
+
+        playEmptyClick(config) {
+            const buffer = this.createClickBuffer(config.duration, config.decay);
+            this.playBuffer(buffer, config.gain);
+        }
+
+        createWeaponBuffer(duration, decay, frequency) {
+            const sampleRate = this.audioContext.sampleRate;
+            const samples = Math.floor(sampleRate * duration);
+            const buffer = this.audioContext.createBuffer(1, samples, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < samples; i++) {
+                const t = i / sampleRate;
+                const amplitude = Math.exp(-decay * t);
+                
+                // Mix filtered noise with a sine wave component for frequency character
+                const noise = (Math.random() * 2 - 1) * 0.7;
+                const tone = Math.sin(2 * Math.PI * frequency * t) * 0.3;
+                const freqNoise = this.bandpassNoise(noise, frequency, sampleRate);
+                
+                data[i] = (freqNoise + tone) * amplitude;
+            }
+            return buffer;
+        }
+
+        createMeleeBuffer(duration, decay, frequency) {
+            const sampleRate = this.audioContext.sampleRate;
+            const samples = Math.floor(sampleRate * duration);
+            const buffer = this.audioContext.createBuffer(1, samples, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < samples; i++) {
+                const t = i / sampleRate;
+                const amplitude = Math.exp(-decay * t);
+                
+                // Sharp attack for melee with high frequency emphasis
+                const attackDecay = Math.exp(-t * 80);
+                const noise = (Math.random() * 2 - 1);
+                const highFreq = Math.sin(2 * Math.PI * frequency * t * (1 + t * 3));
+                
+                data[i] = (noise * 0.6 + highFreq * 0.4) * amplitude * attackDecay;
+            }
+            return buffer;
+        }
+
+        createHitBuffer(duration, decay, frequency, harmonics) {
+            const sampleRate = this.audioContext.sampleRate;
+            const samples = Math.floor(sampleRate * duration);
+            const buffer = this.audioContext.createBuffer(1, samples, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < samples; i++) {
+                const t = i / sampleRate;
+                const amplitude = Math.exp(-decay * t);
+                
+                // Create pleasant harmonic tones for satisfying hit feedback
+                let signal = 0;
+                
+                // Main frequency component
+                signal += Math.sin(2 * Math.PI * frequency * t) * 0.5;
+                
+                // Add harmonics for richness and satisfaction
+                if (harmonics) {
+                    harmonics.forEach((harmFreq, index) => {
+                        const harmAmp = 0.3 / (index + 1); // Decreasing amplitude for higher harmonics
+                        signal += Math.sin(2 * Math.PI * harmFreq * t) * harmAmp;
+                    });
+                }
+                
+                // Add a touch of brightness with filtered noise
+                const brightness = (Math.random() * 2 - 1) * 0.1 * Math.exp(-t * 20);
+                
+                data[i] = (signal + brightness) * amplitude;
+            }
+            return buffer;
+        }
+
+        bandpassNoise(noise, centerFreq, sampleRate) {
+            // Simple bandpass filter approximation for frequency-colored noise
+            const normalized = centerFreq / (sampleRate / 2);
+            const factor = Math.max(0.1, Math.min(1.0, normalized));
+            return noise * factor;
+        }
+
+        createClickBuffer(duration, decay) {
+            const sampleRate = this.audioContext.sampleRate;
+            const samples = Math.floor(sampleRate * duration);
+            const buffer = this.audioContext.createBuffer(1, samples, sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < samples; i++) {
+                const t = i / sampleRate;
+                
+                if (t < 0.005) {
+                    data[i] = (Math.random() - 0.5) * 0.6;
+                } else if (t < 0.02) {
+                    data[i] = (Math.random() - 0.5) * 0.2 * Math.exp(-decay * t);
+                } else {
+                    data[i] = (Math.random() - 0.5) * 0.1 * Math.exp(-100 * t);
+                }
+            }
+
+            return buffer;
+        }
+
+        playBuffer(buffer, gain) {
+            const source = this.audioContext.createBufferSource();
+            source.buffer = buffer;
+
+            const gainNode = this.audioContext.createGain();
+            gainNode.gain.value = gain;
+
+            source.connect(gainNode).connect(this.audioContext.destination);
+            source.start();
+        }
+    }
+
+    // =====================================================
+    // MOBILE INPUT MANAGER
+    // =====================================================
+    class MobileInputManager {
+        constructor(game) {
+            this.game = game;
+            this.isActive = false;
+            this.leftStick = { x: 0, y: 0, active: false, element: null };
+            this.touchStartPos = { x: 0, y: 0 };
+            this.stickRadius = 60;
+            this.initMobileControls();
+        }
+
+        initMobileControls() {
+            this.leftStick.element = document.getElementById('leftStick');
+            
+            // Initialize touch events for analog stick
+            this.initAnalogStick(this.leftStick, 'left');
+            
+            // Initialize mobile buttons
+            this.initMobileButtons();
+        }
+
+        initAnalogStick(stick, side) {
+            const element = stick.element;
+            
+            // Left stick handles movement
+            element.addEventListener('touchstart', (e) => this.handleStickTouchStart(e, stick, side));
+            element.addEventListener('touchmove', (e) => this.handleStickTouchMove(e, stick, side));
+            element.addEventListener('touchend', (e) => this.handleStickTouchEnd(e, stick, side));
+            
+            // Mouse events for testing on desktop
+            element.addEventListener('mousedown', (e) => this.handleStickMouseDown(e, stick, side));
+            element.addEventListener('mousemove', (e) => this.handleStickMouseMove(e, stick, side));
+            element.addEventListener('mouseup', (e) => this.handleStickMouseUp(e, stick, side));
+        }
+
+        initMobileButtons() {
+            
+            document.getElementById('reloadButton').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.game.inputManager.handleReload();
+            });
+            
+            document.getElementById('shopButton').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.game.shopSystem.tryOpenShop();
+            });
+            
+            document.getElementById('weaponButton').addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                this.cycleWeaponSlot();
+            });
+            
+            // Mouse events for testing
+            document.getElementById('reloadButton').addEventListener('click', () => this.game.inputManager.handleReload());
+            document.getElementById('shopButton').addEventListener('click', () => this.game.shopSystem.tryOpenShop());
+            document.getElementById('weaponButton').addEventListener('click', () => this.cycleWeaponSlot());
+        }
+        
+        cycleWeaponSlot() {
+            const weaponSystem = this.game.weaponSystem;
+            const currentSlot = weaponSystem.currentSlot;
+            
+            // Define the order to cycle through weapons
+            const weaponOrder = ['main1', 'main2', 'side'];
+            const currentIndex = weaponOrder.indexOf(currentSlot);
+            const nextIndex = (currentIndex + 1) % weaponOrder.length;
+            const nextSlot = weaponOrder[nextIndex];
+            
+            // Switch to the next weapon
+            weaponSystem.switchSlot(nextSlot);
+            
+            // Update the button label to show more intuitive text
+            const weaponButton = document.getElementById('weaponButton');
+            weaponButton.textContent = 'WEAPON';
+            
+            // Add visual feedback
+            weaponButton.style.background = 'rgba(255, 213, 74, 0.3)';
+            setTimeout(() => {
+                weaponButton.style.background = '';
+            }, 200);
+            
+            console.log(`Switched to ${nextSlot} weapon (slot ${nextIndex + 1})`);
+        }
+
+        handleStickTouchStart(e, stick, side) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const rect = stick.element.getBoundingClientRect();
+            
+            // Check if touch is within this stick's bounds
+            if (touch.clientX < rect.left || touch.clientX > rect.right || 
+                touch.clientY < rect.top || touch.clientY > rect.bottom) {
+                return; // Touch is outside this stick's area
+            }
+            
+            // Only left stick exists now, no conflicts to handle
+            
+            this.touchStartPos = {
+                x: touch.clientX - rect.left,
+                y: touch.clientY - rect.top
+            };
+            stick.active = true;
+            stick.element.classList.add('active');
+            this.updateStickPosition(touch.clientX, touch.clientY, stick, side);
+        }
+
+        handleStickTouchMove(e, stick, side) {
+            e.preventDefault();
+            if (stick.active) {
+                const touch = e.touches[0];
+                const rect = stick.element.getBoundingClientRect();
+                
+                // Only update if touch is still within reasonable bounds
+                if (touch.clientX >= rect.left - 50 && touch.clientX <= rect.right + 50 && 
+                    touch.clientY >= rect.top - 50 && touch.clientY <= rect.bottom + 50) {
+                    this.updateStickPosition(touch.clientX, touch.clientY, stick, side);
+                }
+            }
+        }
+
+        handleStickTouchEnd(e, stick, side) {
+            e.preventDefault();
+            stick.active = false;
+            stick.x = 0;
+            stick.y = 0;
+            stick.hasJumped = false; // Reset jump flag
+            stick.element.classList.remove('active');
+            this.updateStickVisual(stick);
+        }
+
+        handleStickMouseDown(e, stick, side) {
+            e.preventDefault();
+            const rect = stick.element.getBoundingClientRect();
+            this.touchStartPos = {
+                x: e.clientX - rect.left,
+                y: e.clientY - rect.top
+            };
+            stick.active = true;
+            stick.element.classList.add('active');
+            this.updateStickPosition(e.clientX, e.clientY, stick, side);
+        }
+
+        handleStickMouseMove(e, stick, side) {
+            if (stick.active) {
+                this.updateStickPosition(e.clientX, e.clientY, stick, side);
+            }
+        }
+
+        handleStickMouseUp(e, stick, side) {
+            stick.active = false;
+            stick.x = 0;
+            stick.y = 0;
+            stick.hasJumped = false; // Reset jump flag
+            stick.element.classList.remove('active');
+            this.updateStickVisual(stick);
+        }
+
+        updateStickPosition(clientX, clientY, stick, side) {
+            const rect = stick.element.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const deltaX = clientX - centerX;
+            const deltaY = clientY - centerY;
+            const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+            
+            if (distance > this.stickRadius) {
+                const angle = Math.atan2(deltaY, deltaX);
+                stick.x = Math.cos(angle) * this.stickRadius;
+                stick.y = Math.sin(angle) * this.stickRadius;
+            } else {
+                stick.x = deltaX;
+                stick.y = deltaY;
+            }
+            
+            // Apply deadzone
+            if (Math.abs(stick.x) < CONFIG.MOBILE_ANALOG_DEADZONE * this.stickRadius) stick.x = 0;
+            if (Math.abs(stick.y) < CONFIG.MOBILE_ANALOG_DEADZONE * this.stickRadius) stick.y = 0;
+            
+            // Handle jumping when moving stick upward (negative Y)
+            if (side === 'left' && stick.y < -this.stickRadius * 0.5) {
+                // Only jump if we haven't already detected a jump for this stick session
+                if (!stick.hasJumped) {
+                    this.game.inputManager.handleJump();
+                    stick.hasJumped = true;
+                }
+            } else if (stick.y >= -this.stickRadius * 0.3) {
+                // Reset jump flag when stick is not pointing strongly upward
+                stick.hasJumped = false;
+            }
+            
+            this.updateStickVisual(stick);
+        }
+
+        updateStickVisual(stick) {
+            const element = stick.element;
+            const before = element.querySelector('::before') || element;
+            
+            if (stick.active && (Math.abs(stick.x) > 0 || Math.abs(stick.y) > 0)) {
+                const maxOffset = 30;
+                const offsetX = (stick.x / this.stickRadius) * maxOffset;
+                const offsetY = (stick.y / this.stickRadius) * maxOffset;
+                
+                element.style.setProperty('--stick-offset-x', `${offsetX}px`);
+                element.style.setProperty('--stick-offset-y', `${offsetY}px`);
+            } else {
+                element.style.setProperty('--stick-offset-x', '0px');
+                element.style.setProperty('--stick-offset-y', '0px');
+            }
+        }
+
+        getLeftStickInput() {
+            if (!this.leftStick.active) return { x: 0, y: 0 };
+            return {
+                x: this.leftStick.x / this.stickRadius,
+                y: 0 // Y component handled separately for jumping
+            };
+        }
+
+
+        
+
+
+
+
+
+
+
+
+
+
+
+        
+
+
+        show() {
+            this.isActive = true;
+            document.getElementById('mobileControls').classList.add('active');
+            
+            // Initialize weapon button label
+            this.updateWeaponButtonLabel();
+        }
+        
+        updateWeaponButtonLabel() {
+            const weaponButton = document.getElementById('weaponButton');
+            weaponButton.textContent = 'WEAPON';
+        }
+
+        hide() {
+            this.isActive = false;
+            document.getElementById('mobileControls').classList.remove('active');
+        }
+    }
+
+    // =====================================================
+    // INPUT MANAGER
+    // =====================================================
+    class InputManager {
+        constructor(game) {
+            this.game = game;
+            this.keys = { w: false, a: false, d: false };
+            this.mouse = { x: 0, y: 0, down: false };
+            this.mobileInput = null;
+            this.initEventListeners();
+        }
+
+        initEventListeners() {
+            window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+            window.addEventListener('keyup', (e) => this.handleKeyUp(e));
+            this.game.canvas.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+            this.game.canvas.addEventListener('mousedown', () => this.handleMouseDown());
+            window.addEventListener('mouseup', () => this.handleMouseUp());
+            
+            // Add touch events for mobile shooting (will be initialized later)
+            if (MobileDetector.isMobile()) {
+                this.game.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e));
+                this.game.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e));
+                this.game.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+            }
+        }
+
+        handleKeyDown(e) {
+            const key = e.key.toLowerCase();
+            
+            if (key in this.keys) {
+                e.preventDefault();
+                this.keys[key] = true;
+            }
+
+            const keyActions = {
+                'w': () => this.handleJump(),
+                '1': () => this.game.weaponSystem.switchSlot('main1'),
+                '2': () => this.game.weaponSystem.switchSlot('main2'),
+                '3': () => this.game.weaponSystem.switchSlot('side'),
+                'r': () => this.handleReload(),
+                'e': () => this.game.shopSystem.tryOpenShop(),
+                ' ': () => this.handleRestart()
+            };
+
+            const action = keyActions[key];
+            if (action) action();
+        }
+
+        handleKeyUp(e) {
+            const key = e.key.toLowerCase();
+            if (key in this.keys) {
+                this.keys[key] = false;
+            }
+        }
+
+        handleMouseMove(e) {
+            const rect = this.game.canvas.getBoundingClientRect();
+            
+            // Convert screen coordinates to world coordinates
+            if (MobileDetector.isMobile()) {
+                // Mobile uses transform scaling
+                const scale = this.game.currentScale || 1.0;
+                this.mouse.x = (e.clientX - rect.left) / scale;
+                this.mouse.y = (e.clientY - rect.top) / scale;
+            } else {
+                // Desktop uses 2x context scaling, so map to world coordinates
+                const relativeX = (e.clientX - rect.left) / rect.width;
+                const relativeY = (e.clientY - rect.top) / rect.height;
+                this.mouse.x = relativeX * CONFIG.WORLD_WIDTH;
+                this.mouse.y = relativeY * CONFIG.WORLD_HEIGHT;
+            }
+            
+            // Clamp to world bounds
+            this.mouse.x = Math.max(0, Math.min(MobileDetector.getWorldWidth(), this.mouse.x));
+            this.mouse.y = Math.max(0, Math.min(MobileDetector.getWorldHeight(), this.mouse.y));
+        }
+        
+        getMobileMovementInput() {
+            if (!this.mobileInput) return { x: 0, y: 0 };
+            return this.mobileInput.getLeftStickInput();
+        }
+        
+
+        
+        initializeMobileControls() {
+            if (MobileDetector.isMobile() && !this.mobileInput) {
+                this.mobileInput = new MobileInputManager(this.game);
+                this.mobileInput.show();
+            }
+        }
+        
+        getCurrentScale() {
+            // Use the stored scale from the game instance if available
+            if (this.game && this.game.currentScale !== undefined) {
+                return this.game.currentScale;
+            }
+            
+            // Fallback calculation for 1280x720 world
+            const containerRect = document.getElementById('gameContainer').getBoundingClientRect();
+            const padding = 0;
+            const availableWidth = containerRect.width - (padding * 2);
+            const availableHeight = containerRect.height - (padding * 2);
+            
+            const scaleX = availableWidth / MobileDetector.getWorldWidth();
+            const scaleY = availableHeight / MobileDetector.getWorldHeight();
+            return Math.min(scaleX, scaleY, 1.0);
+        }
+
+        handleMouseDown() {
+            if (!this.game.gameOver) {
+                this.mouse.down = true;
+                this.game.audioManager.init();
+            }
+        }
+
+        handleMouseUp() {
+            this.mouse.down = false;
+            this.game.weaponSystem.resetWeaponStates();
+        }
+
+        handleJump() {
+            const player = this.game.player;
+            if (player.onGround && !this.game.gameOver) {
+                player.velocityY = -CONFIG.PLAYER_JUMP_SPEED;
+                player.onGround = false;
+            }
+        }
+
+        handleReload() {
+            if (!this.game.gameOver) {
+                this.game.weaponSystem.reloadCurrentWeapon();
+            }
+        }
+
+        handleRestart() {
+            if (this.game.gameOver && this.game.canRestart) {
+                this.game.restart();
+            }
+        }
+        
+        handleTouchStart(e) {
+            e.preventDefault();
+            
+            // Check if game is over and can restart
+            if (this.game.gameOver && this.game.canRestart) {
+                this.handleRestart();
+                return;
+            }
+            
+            // Find the first touch that's not on mobile controls (movement stick)
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                
+                // Check if touch is within the movement stick area (including extended drag zone)
+                if (this.mobileInput && this.mobileInput.leftStick.element) {
+                    const stickRect = this.mobileInput.leftStick.element.getBoundingClientRect();
+                    // Include the extended 50px boundary that the stick system uses
+                    if (touch.clientX >= stickRect.left - 50 && touch.clientX <= stickRect.right + 50 &&
+                        touch.clientY >= stickRect.top - 50 && touch.clientY <= stickRect.bottom + 50) {
+                        continue; // Skip movement stick touches (including extended drag area)
+                    }
+                }
+                
+                const rect = this.game.canvas.getBoundingClientRect();
+                
+                if (MobileDetector.isMobile()) {
+                    const scale = this.game.currentScale || 1.0;
+                    this.mouse.x = (touch.clientX - rect.left) / scale;
+                    this.mouse.y = (touch.clientY - rect.top) / scale;
+                } else {
+                    // Desktop touch handling with 2x context scaling
+                    const relativeX = (touch.clientX - rect.left) / rect.width;
+                    const relativeY = (touch.clientY - rect.top) / rect.height;
+                    this.mouse.x = relativeX * CONFIG.WORLD_WIDTH;
+                    this.mouse.y = relativeY * CONFIG.WORLD_HEIGHT;
+                }
+                
+                // Clamp to world bounds
+                this.mouse.x = Math.max(0, Math.min(MobileDetector.getWorldWidth(), this.mouse.x));
+                this.mouse.y = Math.max(0, Math.min(MobileDetector.getWorldHeight(), this.mouse.y));
+                
+                this.handleMouseDown();
+                break; // Only handle the first valid touch for shooting
+            }
+        }
+        
+        handleTouchMove(e) {
+            e.preventDefault();
+            
+            // Find the first touch that's not on mobile controls (movement stick)
+            for (let i = 0; i < e.touches.length; i++) {
+                const touch = e.touches[i];
+                
+                // Check if touch is within the movement stick area (including extended drag zone)
+                if (this.mobileInput && this.mobileInput.leftStick.element) {
+                    const stickRect = this.mobileInput.leftStick.element.getBoundingClientRect();
+                    // Include the extended 50px boundary that the stick system uses
+                    if (touch.clientX >= stickRect.left - 50 && touch.clientX <= stickRect.right + 50 &&
+                        touch.clientY >= stickRect.top - 50 && touch.clientY <= stickRect.bottom + 50) {
+                        continue; // Skip movement stick touches (including extended drag area)
+                    }
+                }
+                
+                const rect = this.game.canvas.getBoundingClientRect();
+                
+                if (MobileDetector.isMobile()) {
+                    const scale = this.game.currentScale || 1.0;
+                    this.mouse.x = (touch.clientX - rect.left) / scale;
+                    this.mouse.y = (touch.clientY - rect.top) / scale;
+                } else {
+                    // Desktop touch handling with 2x context scaling
+                    const relativeX = (touch.clientX - rect.left) / rect.width;
+                    const relativeY = (touch.clientY - rect.top) / rect.height;
+                    this.mouse.x = relativeX * CONFIG.WORLD_WIDTH;
+                    this.mouse.y = relativeY * CONFIG.WORLD_HEIGHT;
+                }
+                
+                // Clamp to world bounds
+                this.mouse.x = Math.max(0, Math.min(MobileDetector.getWorldWidth(), this.mouse.x));
+                this.mouse.y = Math.max(0, Math.min(MobileDetector.getWorldHeight(), this.mouse.y));
+                break; // Only handle the first valid touch for aiming
+            }
+        }
+        
+        handleTouchEnd(e) {
+            e.preventDefault();
+            this.handleMouseUp();
+        }
+    }
+
+    // =====================================================
+    // WEAPON SYSTEM
+    // =====================================================
+    class WeaponSystem {
+        constructor(game) {
+            this.game = game;
+            this.currentSlot = 'main';
+            this.inventory = this.initializeInventory();
+        }
+
+        initializeInventory() {
+            return {
+                main1: this.createWeaponInstance(WEAPONS.rifle),
+                main2: this.createWeaponInstance(WEAPONS.sniper),
+                side: this.createWeaponInstance(WEAPONS.pistol)
+            };
+        }
+
+        createWeaponInstance(weaponTemplate) {
+            return {
+                ...weaponTemplate,
+                lastShot: -999,
+                lastSwing: -999,
+                emptyClickPlayed: false,
+                wasFiring: false,
+                isReloading: false,
+                reloadStartTime: null,
+                reloadEndTime: null
+            };
+        }
+
+        switchSlot(slot) {
+            if (this.currentSlot !== slot) {
+                this.cancelCurrentReload();
+            }
+            this.currentSlot = slot;
+        }
+
+        cancelCurrentReload() {
+            const weapon = this.getCurrentWeapon();
+            if (weapon?.isReloading) {
+                weapon.isReloading = false;
+                weapon.reloadStartTime = null;
+                weapon.reloadEndTime = null;
+            }
+        }
+
+        getCurrentWeapon() {
+            // Safety check to ensure inventory is initialized
+            if (!this.inventory || Object.keys(this.inventory).length === 0) {
+                return null;
+            }
+            
+            const weapon = this.inventory[this.currentSlot];
+            if (!weapon) {
+                // Fallback to first available slot without console warning
+                const firstSlot = Object.keys(this.inventory)[0];
+                if (firstSlot) {
+                    this.currentSlot = firstSlot;
+                    return this.inventory[firstSlot];
+                }
+            }
+            return weapon;
+        }
+
+        update() {
+            const input = this.game.inputManager;
+            const isShooting = input.mouse.down;
+            
+            if (!isShooting) return;
+
+            const weapon = this.getCurrentWeapon();
+            if (!weapon) return; // Safety check to prevent errors
+            
+            if (weapon.id === 'knife_mk1' || weapon.range) {
+                this.tryMeleeAttack(weapon);
+            } else {
+                this.tryFireWeapon(weapon);
+            }
+        }
+
+        tryFireWeapon(weapon) {
+            if (!this.canFire(weapon)) return;
+
+            if (this.isOutOfAmmo(weapon)) {
+                this.handleEmptyWeapon(weapon);
+                return;
+            }
+            
+            this.fireWeapon(weapon);
+        }
+
+        canFire(weapon) {
+            if (!weapon) return false; // Safety check
+            const now = this.game.timeElapsed;
+            const cooldown = 1 / weapon.fireRate;
+            return now - weapon.lastShot >= cooldown && !weapon.isReloading;
+        }
+
+        isOutOfAmmo(weapon) {
+            if (!weapon) return true; // Safety check
+            return weapon.ammo && weapon.ammo.current <= 0;
+        }
+
+        handleEmptyWeapon(weapon) {
+            if (!weapon) return; // Safety check
+            if (!weapon.emptyClickPlayed && !weapon.wasFiring) {
+                this.game.audioManager.playSound('empty');
+                weapon.emptyClickPlayed = true;
+            }
+        }
+
+        fireWeapon(weapon) {
+            weapon.emptyClickPlayed = false;
+            weapon.wasFiring = true;
+            weapon.lastShot = this.game.timeElapsed;
+
+            const gunPos = this.getGunPosition();
+            const direction = this.calculateFireDirection(gunPos);
+
+            if (weapon.id === 'shotgun_basic') {
+                this.fireShotgun(gunPos, direction, weapon);
+            } else {
+                this.fireSingleBullet(gunPos, direction, weapon);
+            }
+
+            this.applyRecoil(direction, weapon);
+            this.createMuzzleFlash(gunPos, direction, weapon);
+            this.consumeAmmo(weapon);
+            
+            // Map weapon ID to sound type
+            let soundType;
+            switch(weapon.id) {
+                case 'pistol_basic':
+                    soundType = 'pistol';
+                    break;
+                case 'rifle_mk1':
+                    soundType = 'rifle';
+                    break;
+                case 'shotgun_basic':
+                    soundType = 'shotgun';
+                    break;
+                case 'smg_basic':
+                    soundType = 'smg';
+                    break;
+                case 'sniper_basic':
+                    soundType = 'sniper';
+                    break;
+                case 'minigun_basic':
+                    soundType = 'minigun';
+                    break;
+                default:
+                    soundType = 'pistol'; // fallback
+            }
+            this.game.audioManager.playSound(soundType);
+        }
+
+        tryMeleeAttack(weapon) {
+            const now = this.game.timeElapsed;
+            if (now - weapon.lastSwing < weapon.cooldown) return;
+            
+            weapon.lastSwing = now;
+
+            const hitBox = this.getMeleeHitBox(weapon);
+            const hitAny = this.checkMeleeHits(hitBox, weapon);
+
+            this.game.effectsManager.addScreenShake(hitAny ? 4 : 1.5);
+            this.game.effectsManager.createMeleeSlash(this.getGunPosition(), this.game.player.facingRight);
+            this.game.audioManager.playSound('melee');
+        }
+
+        fireShotgun(gunPos, direction, weapon) {
+            const { pelletCount, spreadAngle, damage, bulletSpeed } = weapon;
+            const pelletSpread = spreadAngle / (pelletCount - 1);
+            const pelletDamage = Math.floor(damage / pelletCount);
+            
+            for (let i = 0; i < pelletCount; i++) {
+                const angle = this.calculatePelletAngle(i, pelletCount, pelletSpread);
+                const pelletDir = Utils.rotateVector(direction.x, direction.y, angle);
+                const normalizedDir = Utils.normalizeVector(pelletDir.x, pelletDir.y);
+                const speedVariation = 0.9 + Math.random() * 0.2;
+                
+                this.createBullet(gunPos, normalizedDir, bulletSpeed * speedVariation, pelletDamage, weapon, true);
+            }
+        }
+
+        calculatePelletAngle(index, count, spread) {
+            const baseAngle = (index - (count - 1) / 2) * spread;
+            const randomSpread = (Math.random() - 0.5) * spread * 0.2;
+            return baseAngle + randomSpread;
+        }
+
+        fireSingleBullet(gunPos, direction, weapon) {
+            const finalDir = this.applyAccuracy(direction, weapon.accuracy);
+            this.createBullet(gunPos, finalDir, weapon.bulletSpeed, weapon.damage, weapon, false);
+        }
+
+        applyAccuracy(direction, accuracy) {
+            if (!accuracy || accuracy >= 1.0) return direction;
+            
+            const spreadAngle = (1.0 - accuracy) * Math.PI * 0.3;
+            const randomAngle = (Math.random() - 0.5) * spreadAngle;
+            const rotated = Utils.rotateVector(direction.x, direction.y, randomAngle);
+            return Utils.normalizeVector(rotated.x, rotated.y);
+        }
+
+        createBullet(gunPos, direction, speed, damage, weapon, isPellet) {
+            const offset = 12;
+            this.game.bullets.push({
+                x: gunPos.x + direction.x * offset,
+                y: gunPos.y + direction.y * offset,
+                velocityX: direction.x * speed,
+                velocityY: direction.y * speed,
+                damage: damage,
+                maxRange: weapon.effectiveRange,
+                isPellet: isPellet
+            });
+        }
+
+        calculateFireDirection(gunPos) {
+            const input = this.game.inputManager;
+            
+
+            
+            // Fallback to mouse input
+            const mouse = input.mouse;
+            return Utils.getDirection(gunPos.x, gunPos.y, mouse.x, mouse.y);
+        }
+
+        applyRecoil(direction, weapon) {
+            const player = this.game.player;
+            player.velocityX -= direction.x * weapon.knockback;
+            player.velocityY -= direction.y * weapon.knockback * 0.2;
+            this.game.effectsManager.addScreenShake(weapon.recoilKick);
+        }
+
+        createMuzzleFlash(gunPos, direction, weapon) {
+            const offset = 12;
+            this.game.effectsManager.createMuzzleFlash(
+                gunPos.x + direction.x * offset,
+                gunPos.y + direction.y * offset,
+                weapon.flashTime
+            );
+        }
+
+        consumeAmmo(weapon) {
+            if (weapon.ammo && weapon.ammo.current > 0) {
+                weapon.ammo.current--;
+            }
+        }
+
+        getMeleeHitBox(weapon) {
+            const player = this.game.player;
+            return {
+                x: player.facingRight ? player.x + player.width : player.x - weapon.range,
+                y: player.y,
+                width: weapon.range,
+                height: player.height
+            };
+        }
+
+        checkMeleeHits(hitBox, weapon) {
+            let hitAny = false;
+            const zombies = this.game.zombies;
+            
+            for (let i = zombies.length - 1; i >= 0; i--) {
+                const zombie = zombies[i];
+                if (Utils.checkCollision(
+                    hitBox.x, hitBox.y, hitBox.width, hitBox.height,
+                    zombie.x, zombie.y, zombie.width, zombie.height
+                )) {
+                    const zombieDied = this.game.damageZombie(zombie, weapon.damage);
+                    hitAny = true;
+                    
+                    // Play satisfying hit sound for melee
+                    this.game.audioManager.playSound('bodyHit');
+                    
+                    if (zombieDied) {
+                        zombies.splice(i, 1);
+                    }
+                }
+            }
+            return hitAny;
+        }
+
+        getGunPosition() {
+            const player = this.game.player;
+            const centerX = player.x + player.width / 2;
+            const centerY = player.y + (player.height * 0.65);
+            const offsetX = player.facingRight ? 8 : -8;
+            return { x: centerX + offsetX, y: centerY };
+        }
+
+        reloadCurrentWeapon() {
+            const weapon = this.getCurrentWeapon();
+            if (!this.canReload(weapon)) return;
+            
+            this.startReload(weapon);
+        }
+
+        canReload(weapon) {
+            return weapon && 
+                   weapon.id !== 'knife_mk1' && 
+                   !weapon.range &&
+                   weapon.ammo && 
+                   weapon.ammo.current < weapon.ammo.max && 
+                   !weapon.isReloading;
+        }
+
+        startReload(weapon) {
+            weapon.isReloading = true;
+            weapon.reloadStartTime = this.game.timeElapsed;
+            weapon.reloadEndTime = this.game.timeElapsed + weapon.reloadTime;
+        }
+
+        checkReloadProgress() {
+            Object.values(this.inventory).forEach(weapon => {
+                if (weapon.isReloading && this.game.timeElapsed >= weapon.reloadEndTime) {
+                    this.completeReload(weapon);
+                }
+            });
+        }
+
+        completeReload(weapon) {
+            weapon.isReloading = false;
+            weapon.ammo.current = weapon.ammo.max;
+            weapon.reloadStartTime = null;
+            weapon.reloadEndTime = null;
+        }
+
+        resetWeaponStates() {
+            Object.values(this.inventory).forEach(weapon => {
+                weapon.emptyClickPlayed = false;
+                weapon.wasFiring = false;
+            });
+        }
+
+        reloadAllWeapons() {
+            Object.values(this.inventory).forEach(weapon => {
+                // Only reload weapons that have ammo (not melee weapons like knife)
+                if (weapon.ammo && weapon.ammo.max !== Infinity) {
+                    weapon.ammo.current = weapon.ammo.max;
+                    weapon.isReloading = false;
+                    weapon.reloadStartTime = null;
+                    weapon.reloadEndTime = null;
+                }
+            });
+            console.log('All weapons reloaded to full ammo!');
+        }
+    }
+
+    // =====================================================
+    // SHOP SYSTEM
+    // =====================================================
+    class ShopSystem {
+        constructor(game) {
+            this.game = game;
+            this.shopOpen = false;
+            this.selectedShopItem = null;
+            this.selectedSlot = null;
+            this.merchant = this.createMerchant();
+            this.initializeUI();
+        }
+
+        createMerchant() {
+            return {
+                x: CONFIG.MERCHANT_X,
+                y: 0,
+                width: CONFIG.PLAYER_WIDTH,
+                height: CONFIG.PLAYER_HEIGHT,
+                facingRight: true,
+                interactionRange: CONFIG.MERCHANT_INTERACTION_RANGE
+            };
+        }
+
+        initializeUI() {
+            // Main menu options
+            document.getElementById('startWaveOption').addEventListener('click', () => this.startWaveOption());
+            document.getElementById('weaponShopOption').addEventListener('click', () => this.openWeaponShop());
+            
+            // Weapon shop controls
+            document.getElementById('backToMenuButton').addEventListener('click', () => this.showMainMenu());
+            
+            // Close button
+            document.getElementById('closeShopButton').addEventListener('click', () => this.closeShop());
+        }
+
+        update() {
+            if (this.shopOpen) {
+                if (!this.canShopBeOpen()) {
+                    this.closeShop();
+                }
+            }
+        }
+
+        canShopBeOpen() {
+            return this.game.waveSystem.gameStage === 'peaceful' && 
+                   this.getPlayerDistance() <= this.merchant.interactionRange;
+        }
+
+        getPlayerDistance() {
+            const player = this.game.player;
+            const playerCenterX = player.x + player.width / 2;
+            const merchantCenterX = this.merchant.x + this.merchant.width / 2;
+            return Math.abs(playerCenterX - merchantCenterX);
+        }
+
+        tryOpenShop() {
+            if (this.shopOpen || this.game.waveSystem.gameStage !== 'peaceful') return;
+            
+            if (this.getPlayerDistance() <= this.merchant.interactionRange) {
+                this.openShop();
+            }
+        }
+
+        openShop() {
+            this.shopOpen = true;
+            this.showMainMenu();
+            document.getElementById('shopInterface').style.display = 'block';
+        }
+
+        showMainMenu() {
+            document.getElementById('mainMenu').style.display = 'block';
+            document.getElementById('weaponShop').style.display = 'none';
+            this.updateWaveDisplay();
+        }
+
+        updateWaveDisplay() {
+            const waveNumberElement = document.getElementById('currentWaveNumber');
+            if (waveNumberElement) {
+                waveNumberElement.textContent = this.game.waveSystem.currentWave;
+            }
+        }
+
+        openWeaponShop() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('weaponShop').style.display = 'block';
+            this.updateShopInterface();
+        }
+
+        startWaveOption() {
+            if (this.game.waveSystem.gameStage === 'peaceful') {
+                this.game.waveSystem.startWaves();
+                this.closeShop();
+            }
+        }
+
+        closeShop() {
+            this.shopOpen = false;
+            document.getElementById('shopInterface').style.display = 'none';
+        }
+
+        updateShopInterface() {
+            const container = document.getElementById('shopItems');
+            container.innerHTML = '';
+            
+            // Create table structure
+            const table = document.createElement('div');
+            table.className = 'shopItemsContainer';
+            
+            // Row 1: Headers
+            const headerRow = document.createElement('div');
+            headerRow.className = 'shopTableRow';
+            
+            const mainHeader = document.createElement('div');
+            mainHeader.className = 'shopTableHeader';
+            mainHeader.textContent = 'Main';
+            
+            const sideHeader = document.createElement('div');
+            sideHeader.className = 'shopTableHeader';
+            sideHeader.textContent = 'Side';
+            
+            headerRow.appendChild(mainHeader);
+            headerRow.appendChild(sideHeader);
+            table.appendChild(headerRow);
+            
+            // Row 2: Weapons
+            const weaponsRow = document.createElement('div');
+            weaponsRow.className = 'shopTableRow';
+            
+            const mainCell = document.createElement('div');
+            mainCell.className = 'shopTableCell';
+            
+            const sideCell = document.createElement('div');
+            sideCell.className = 'shopTableCell';
+            
+            // Add main weapons to main cell
+            Object.values(SHOP_ITEMS).forEach(item => {
+                if (item.type === 'main') {
+                    mainCell.appendChild(this.createShopItemElement(item));
+                }
+            });
+            
+            // Add side weapons to side cell
+            Object.values(SHOP_ITEMS).forEach(item => {
+                if (item.type === 'side') {
+                    sideCell.appendChild(this.createShopItemElement(item));
+                }
+            });
+            
+            weaponsRow.appendChild(mainCell);
+            weaponsRow.appendChild(sideCell);
+            table.appendChild(weaponsRow);
+            
+            container.appendChild(table);
+        }
+
+        createShopItemElement(item) {
+            const element = document.createElement('div');
+            element.className = 'shopItem';
+            element.dataset.itemId = item.id;
+            
+            const weaponType = item.weapon.type;
+            const isMainWeapon = weaponType === 'main';
+            
+            let slotButtonsHtml = '';
+            let isAnySlotEquipped = false;
+            
+            if (isMainWeapon) {
+                // For main weapons, show slot selection buttons
+                const main1Equipped = this.game.weaponSystem.inventory.main1?.id === item.id;
+                const main2Equipped = this.game.weaponSystem.inventory.main2?.id === item.id;
+                isAnySlotEquipped = main1Equipped || main2Equipped;
+                
+                slotButtonsHtml = `
+                    <div class="slotSelectionButtons">
+                        <button class="slotButton ${main1Equipped ? 'equipped' : ''}" data-slot="main1">
+                            SLOT 1 ${main1Equipped ? '(EQUIPPED)' : ''}
+                        </button>
+                        <button class="slotButton ${main2Equipped ? 'equipped' : ''}" data-slot="main2">
+                            SLOT 2 ${main2Equipped ? '(EQUIPPED)' : ''}
+                        </button>
+                    </div>
+                `;
+            } else {
+                // For side weapons, check if equipped normally
+                isAnySlotEquipped = this.game.weaponSystem.inventory[weaponType]?.id === item.id;
+            }
+            
+            element.innerHTML = `
+                <div class="shopItemInfo">
+                    <div class="shopItemName">${item.name}${isAnySlotEquipped ? ' (EQUIPPED)' : ''}</div>
+                    <div class="shopItemStats">${item.stats}</div>
+                    ${slotButtonsHtml}
+                </div>
+            `;
+            
+            if (isAnySlotEquipped) {
+                element.setAttribute('disabled', 'true');
+            } else if (isMainWeapon) {
+                // For main weapons, add click handlers to slot buttons
+                element.querySelectorAll('.slotButton').forEach(button => {
+                    if (!button.classList.contains('equipped')) {
+                        button.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const targetSlot = button.getAttribute('data-slot');
+                            this.selectShopItemWithSlot(item, targetSlot);
+                        });
+                    }
+                });
+            } else {
+                // For side weapons, use old behavior
+                element.addEventListener('click', () => this.selectShopItem(item));
+            }
+            
+            return element;
+        }
+
+        selectShopItem(item) {
+            // Automatically swap the side weapon
+            const weapon = item.weapon;
+            const targetSlot = item.weapon.type; // Default to weapon's natural slot
+            
+            this.game.weaponSystem.inventory[targetSlot] = 
+                this.game.weaponSystem.createWeaponInstance(weapon);
+            this.game.weaponSystem.currentSlot = targetSlot;
+            
+            // Refresh the shop display to show updated equipped status
+            this.updateShopInterface();
+        }
+
+        selectShopItemWithSlot(item, targetSlot) {
+            // Automatically swap the weapon
+            const weapon = item.weapon;
+            this.game.weaponSystem.inventory[targetSlot] = 
+                this.game.weaponSystem.createWeaponInstance(weapon);
+            this.game.weaponSystem.currentSlot = targetSlot;
+            
+            // Refresh the shop display to show updated equipped status
+            this.updateShopInterface();
+        }
+
+
+
+        setMerchantPosition(y) {
+            this.merchant.y = y;
+        }
+    }
+
+    // =====================================================
+    // WAVE SYSTEM
+    // =====================================================
+    class WaveSystem {
+        constructor(game) {
+            this.game = game;
+            this.gameStage = 'peaceful';
+            this.currentWave = 1;
+            this.waveTimer = null;
+            this.isSpawningWave = false;
+            this.spawnTimers = [];
+            this.initializeUI();
+        }
+
+        initializeUI() {
+            // Wave system initialized without UI button
+        }
+
+
+
+        toggleGameStage() {
+            if (this.gameStage === 'peaceful') {
+                this.startWaves();
+            } else {
+                this.stopWaves();
+            }
+        }
+
+        startWaves() {
+            console.log('Starting waves...');
+            this.gameStage = 'waves';
+            this.spawnWave(this.currentWave);
+        }
+
+        stopWaves() {
+            this.gameStage = 'peaceful';
+            this.game.zombies = [];
+            this.isSpawningWave = false;
+            this.clearAllTimers();
+
+        }
+
+        clearAllTimers() {
+            this.spawnTimers.forEach(timer => clearTimeout(timer));
+            this.spawnTimers = [];
+            
+            if (this.waveTimer) {
+                clearTimeout(this.waveTimer);
+                this.waveTimer = null;
+            }
+        }
+
+        spawnWave(waveNumber) {
+            const zombieCount = this.calculateZombieCount(waveNumber);
+            
+            this.game.effectsManager.showWaveAnnouncement(waveNumber);
+            this.isSpawningWave = true;
+            this.spawnTimers = [];
+            
+            this.scheduleZombieSpawns(zombieCount, waveNumber);
+        }
+
+        calculateZombieCount(waveNumber) {
+            return 2 + (waveNumber - 1) * 2;
+        }
+
+        scheduleZombieSpawns(zombieCount, waveNumber) {
+            let zombiesSpawned = 0;
+            console.log(`Scheduling ${zombieCount} zombies for wave ${waveNumber}`);
+            
+            const spawnNextZombie = () => {
+                if (this.gameStage !== 'waves') {
+                    console.log('Game stage changed, stopping spawns');
+                    this.isSpawningWave = false;
+                    return;
+                }
+                
+                if (zombiesSpawned < zombieCount) {
+                    const type = this.selectZombieType(waveNumber, zombiesSpawned);
+                    console.log(`Spawning zombie ${zombiesSpawned + 1}/${zombieCount}: ${type}`);
+                    
+                    // Spawn spitters closer to screen for better engagement
+                    const spawnX = type === 'zombieSpitter' ? 
+                        MobileDetector.getWorldWidth() - 100 : 
+                        MobileDetector.getWorldWidth() + 50;
+                    
+                    this.game.spawnZombie(spawnX, type);
+                    zombiesSpawned++;
+                    
+                    if (zombiesSpawned < zombieCount) {
+                        const timer = setTimeout(spawnNextZombie, CONFIG.ZOMBIE_SPAWN_DELAY);
+                        this.spawnTimers.push(timer);
+                    } else {
+                        console.log('Wave spawning complete');
+                        this.isSpawningWave = false;
+                    }
+                }
+            };
+            
+            const initialTimer = setTimeout(spawnNextZombie, CONFIG.ZOMBIE_SPAWN_INITIAL_DELAY);
+            this.spawnTimers.push(initialTimer);
+        }
+
+        selectZombieType(waveNumber, spawnIndex) {
+            const availableTypes = WAVE_ZOMBIE_TYPES[Math.min(waveNumber, 5)];
+            
+            // First zombie of special waves is guaranteed special type
+            if (spawnIndex === 0 && waveNumber <= 4) {
+                return availableTypes[0];
+            }
+            
+            // Random selection for other zombies
+            const weights = this.getZombieTypeWeights(waveNumber);
+            return this.weightedRandomSelection(availableTypes, weights);
+        }
+
+        getZombieTypeWeights(waveNumber) {
+            if (waveNumber <= 2) return [0.7, 0.3];
+            if (waveNumber === 3) return [0.2, 0.5, 0.3];
+            if (waveNumber === 4) return [0.1, 0.4, 0.3, 0.2];
+            return [0.4, 0.3, 0.2, 0.1];
+        }
+
+        weightedRandomSelection(types, weights) {
+            const random = Math.random();
+            let cumulative = 0;
+            
+            for (let i = 0; i < types.length && i < weights.length; i++) {
+                cumulative += weights[i];
+                if (random < cumulative) {
+                    return types[i];
+                }
+            }
+            
+            return types[types.length - 1];
+        }
+
+        checkWaveCompletion() {
+            if (this.gameStage !== 'waves' || this.isSpawningWave || this.waveTimer) return;
+            
+            if (this.game.zombies.length === 0) {
+                this.completeCurrentWave();
+            }
+        }
+
+        completeCurrentWave() {
+            // Increment wave number and pause the game
+            this.currentWave++;
+            this.gameStage = 'peaceful';
+            this.isSpawningWave = false;
+            this.clearAllTimers();
+            
+            // Reload all weapons instantly when wave completes
+            this.game.weaponSystem.reloadAllWeapons();
+            
+            // Show wave completion message
+            console.log(`Wave ${this.currentWave - 1} completed! Return to computer to start Wave ${this.currentWave}`);
+            this.game.effectsManager.showWaveCompletion(this.currentWave - 1);
+        }
+
+        scheduleNextWave() {
+            // This method is now only used for continuing from the computer
+            // No automatic scheduling
+            this.spawnWave(this.currentWave);
+        }
+
+        reset() {
+            this.gameStage = 'peaceful';
+            this.currentWave = 1;
+            this.isSpawningWave = false;
+            this.clearAllTimers();
+
+        }
+    }
+
+    // =====================================================
+    // EFFECTS MANAGER
+    // =====================================================
+    class EffectsManager {
+        constructor(game) {
+            this.game = game;
+            this.screenShake = 0;
+            this.muzzleFlash = { active: false, timer: 0, x: 0, y: 0 };
+            this.meleeSlash = { active: false, timer: 0, x: 0, y: 0, facingRight: true };
+            this.waveAnnouncement = { active: false, timer: 0, text: '' };
+            this.hitEffects = [];
+        }
+
+        update(dt) {
+            this.updateScreenShake(dt);
+            this.updateTimedEffect(this.muzzleFlash, dt);
+            this.updateTimedEffect(this.meleeSlash, dt);
+            this.updateTimedEffect(this.waveAnnouncement, dt);
+            this.updateHitEffects(dt);
+            
+
+        }
+
+        updateScreenShake(dt) {
+            if (this.screenShake > 0) {
+                this.screenShake = Math.max(0, this.screenShake - CONFIG.SCREEN_SHAKE_DECAY * dt);
+            }
+        }
+
+        updateTimedEffect(effect, dt) {
+            if (effect.active) {
+                effect.timer -= dt;
+                if (effect.timer <= 0) {
+                    effect.active = false;
+                }
+            }
+        }
+
+        updateHitEffects(dt) {
+            this.hitEffects = this.hitEffects.filter(effect => {
+                effect.timer -= dt;
+                return effect.timer > 0;
+            });
+        }
+
+        addScreenShake(amount) {
+            this.screenShake = Math.max(this.screenShake, amount);
+        }
+
+        createMuzzleFlash(x, y, duration) {
+            this.muzzleFlash = { active: true, timer: duration, x, y };
+        }
+
+        createMeleeSlash(position, facingRight) {
+            this.meleeSlash = {
+                active: true,
+                timer: 0.15,
+                x: position.x,
+                y: position.y,
+                facingRight
+            };
+        }
+
+        createHitEffect(x, y, type, hitData = null) {
+            const effectTimer = type === 'headshot' ? 0.15 : 0.3;
+            this.hitEffects.push({
+                x, y, type,
+                timer: effectTimer,
+                maxTimer: effectTimer,
+                hitData
+            });
+        }
+
+        showWaveAnnouncement(waveNumber) {
+            this.waveAnnouncement = {
+                active: true,
+                timer: 3.0,
+                text: `WAVE ${waveNumber}`
+            };
+        }
+
+        showWaveCompletion(waveNumber) {
+            this.waveAnnouncement = {
+                active: true,
+                timer: 4.0,
+                text: `WAVE ${waveNumber} COMPLETE!`
+            };
+        }
+
+        getScreenShake() {
+            if (this.screenShake <= 0) return { x: 0, y: 0 };
+            return {
+                x: (Math.random() * 2 - 1) * this.screenShake * 0.3,
+                y: (Math.random() * 2 - 1) * this.screenShake * 0.3
+            };
+        }
+    }
+
+    // =====================================================
+    // RENDERER
+    // =====================================================
+    class Renderer {
+        constructor(game) {
+            this.game = game;
+            this.ctx = game.ctx;
+            this.clouds = Utils.shuffleArray([...CLOUD_SPRITES]);
+            this.cloudOffset = 0;
+            
+            // Sprite caching system for mobile performance
+            this.spriteCache = new Map();
+            this.tempCanvas = document.createElement('canvas');
+            this.tempCtx = this.tempCanvas.getContext('2d');
+            
+            // Mobile performance tracking
+            this.frameCount = 0;
+            this.isMobile = MobileDetector.isMobile();
+        }
+
+        // Sprite caching methods for performance optimization
+        getCachedSprite(sprite, width, height) {
+            if (!sprite || !Array.isArray(sprite) || sprite.length === 0) return null;
+            
+            const cacheKey = `${JSON.stringify(sprite)}_${width}_${height}`;
+            
+            if (this.spriteCache.has(cacheKey)) {
+                return this.spriteCache.get(cacheKey);
+            }
+            
+            // Create cached sprite
+            const cachedSprite = this.createCachedSprite(sprite, width, height);
+            this.spriteCache.set(cacheKey, cachedSprite);
+            
+            // Limit cache size to prevent memory issues
+            if (this.spriteCache.size > 100) {
+                const firstKey = this.spriteCache.keys().next().value;
+                this.spriteCache.delete(firstKey);
+            }
+            
+            return cachedSprite;
+        }
+
+        createCachedSprite(sprite, width, height) {
+            const { scaleX, scaleY, actualWidth, actualHeight } = this.getSpriteDrawParams(sprite, 0, 0, width, height);
+            const cellWidth = Math.max(1, scaleX);
+            const cellHeight = Math.max(1, scaleY);
+            
+            // Set up temporary canvas
+            this.tempCanvas.width = actualWidth * cellWidth;
+            this.tempCanvas.height = actualHeight * cellHeight;
+            this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
+            
+            // Pre-render the sprite to the temporary canvas
+            for (let row = 0; row < sprite.length; row++) {
+                const line = sprite[row];
+                if (!line || typeof line !== 'string') continue;
+                
+                for (let col = 0; col < line.length; col++) {
+                    const char = line[col];
+                    if (char === '.') continue;
+                    
+                    const colorKey = SPRITE_COLOR_MAP[char];
+                    if (!colorKey) continue;
+                    
+                    this.tempCtx.fillStyle = PALETTE[colorKey];
+                    this.tempCtx.fillRect(
+                        col * cellWidth,
+                        row * cellHeight,
+                        cellWidth,
+                        cellHeight
+                    );
+                }
+            }
+            
+            // Create and return the cached image data
+            const cachedCanvas = document.createElement('canvas');
+            cachedCanvas.width = this.tempCanvas.width;
+            cachedCanvas.height = this.tempCanvas.height;
+            const cachedCtx = cachedCanvas.getContext('2d');
+            cachedCtx.drawImage(this.tempCanvas, 0, 0);
+            
+            return {
+                canvas: cachedCanvas,
+                width: cachedCanvas.width,
+                height: cachedCanvas.height
+            };
+        }
+
+        // Mobile-specific performance optimizations
+        optimizeCanvasForMobile() {
+            // Disable image smoothing for pixel art (better performance)
+            this.ctx.imageSmoothingEnabled = false;
+            if (this.ctx.webkitImageSmoothingEnabled !== undefined) {
+                this.ctx.webkitImageSmoothingEnabled = false;
+            }
+            if (this.ctx.mozImageSmoothingEnabled !== undefined) {
+                this.ctx.mozImageSmoothingEnabled = false;
+            }
+            if (this.ctx.msImageSmoothingEnabled !== undefined) {
+                this.ctx.msImageSmoothingEnabled = false;
+            }
+        }
+
+        // Batch similar rendering operations to reduce state changes
+        batchFillRects(rects, fillStyle) {
+            if (rects.length === 0) return;
+            
+            this.ctx.fillStyle = fillStyle;
+            rects.forEach(rect => {
+                this.ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
+            });
+        }
+
+        render(deltaTime = 0) {
+            this.frameCount++;
+            this.clearScreen();
+            const shake = this.game.effectsManager.getScreenShake();
+
+            // On mobile, render background clouds less frequently for better performance
+            if (!this.isMobile || this.frameCount % 2 === 0) {
+                this.renderBackground(deltaTime);
+            } else {
+                // Just render the black background without clouds
+                this.ctx.fillStyle = PALETTE.black;
+                this.ctx.fillRect(0, 0, MobileDetector.getWorldWidth(), MobileDetector.getWorldHeight());
+            }
+            
+            this.renderGround();
+            this.renderAcidPools(); // Render acid pools behind entities
+            this.renderEntities(shake);
+            this.renderProjectiles();
+            this.renderEffects(shake);
+            this.renderUI();
+            
+            if (this.game.gameOver) {
+                this.renderGameOver();
+            }
+        }
+
+        clearScreen() {
+            this.ctx.clearRect(0, 0, MobileDetector.getWorldWidth(), MobileDetector.getWorldHeight());
+        }
+
+        renderBackground(deltaTime = 0) {
+            this.ctx.fillStyle = PALETTE.black;
+            this.ctx.fillRect(0, 0, MobileDetector.getWorldWidth(), MobileDetector.getWorldHeight());
+            this.renderClouds(deltaTime);
+        }
+
+        renderClouds(deltaTime = 0) {
+            const worldHeight = MobileDetector.getWorldHeight();
+            const worldWidth = MobileDetector.getWorldWidth();
+            const baseY = worldHeight * 0.25;
+            // Use delta time for frame-rate independent cloud movement
+            this.cloudOffset += CONFIG.CLOUD_SPEED * deltaTime * 60; // Multiply by 60 to maintain similar speed as before
+            
+            let cloudsVisible = 0;
+            
+            for (let i = 0; i < this.clouds.length; i++) {
+                const cloudX = (i * CONFIG.CLOUD_SPACING - this.cloudOffset + worldWidth + 200);
+                if (cloudX > -400 && cloudX < worldWidth + 400) {
+                    const variation = Math.sin(cloudX * 0.01) * 15;
+                    this.drawCloudSprite(this.clouds[i], cloudX, baseY + variation);
+                    cloudsVisible++;
+                }
+            }
+            
+            if (cloudsVisible === 0) {
+                this.clouds = Utils.shuffleArray([...CLOUD_SPRITES]);
+                this.cloudOffset = 0;
+            }
+        }
+
+        drawCloudSprite(sprite, offsetX, baseY) {
+            const pixelSize = CONFIG.CLOUD_PIXEL_SIZE;
+            const spriteWidth = sprite[0].length;
+            const spriteHeight = sprite.length;
+            const cloudWidth = spriteWidth * pixelSize;
+            const cloudHeight = spriteHeight * pixelSize;
+            const startX = offsetX + (110 - cloudWidth) / 2;
+            const startY = baseY - cloudHeight;
+
+            for (let row = 0; row < spriteHeight; row++) {
+                const line = sprite[row];
+                for (let col = 0; col < spriteWidth; col++) {
+                    if (line[col] === 'b') {
+                        this.ctx.fillStyle = PALETTE.cloudDark;
+                        this.ctx.fillRect(
+                            Math.floor(startX + col * pixelSize),
+                            Math.floor(startY + row * pixelSize),
+                            Math.ceil(pixelSize),
+                            Math.ceil(pixelSize)
+                        );
+                    }
+                }
+            }
+        }
+
+        renderGround() {
+            const worldHeight = MobileDetector.getWorldHeight();
+            const worldWidth = MobileDetector.getWorldWidth();
+            const y = worldHeight - CONFIG.GROUND_HEIGHT;
+
+            this.ctx.fillStyle = '#3d2b1f';
+            this.ctx.fillRect(0, y + 20, worldWidth, 20);
+
+            this.ctx.fillStyle = '#2d4a2d';
+            this.ctx.fillRect(0, y + 10, worldWidth, 10);
+
+            this.ctx.fillStyle = '#4a7c59';
+            this.ctx.fillRect(0, y, worldWidth, 10);
+
+            this.ctx.fillStyle = PALETTE.outline;
+            this.ctx.fillRect(0, y - 1, worldWidth, 1);
+        }
+
+        renderEntities(shake) {
+            this.renderMerchant();
+            this.renderPlayer(shake);
+            this.renderWeapon(shake);
+            this.renderZombies();
+        }
+
+        renderPlayer(shake) {
+            const player = this.game.player;
+            const sprite = player.facingRight ? SPRITES.player.right : SPRITES.player.left;
+            this.drawSprite(
+                sprite,
+                Math.floor(player.x + shake.x),
+                Math.floor(player.y + shake.y),
+                player.width,
+                player.height
+            );
+            
+            // Render reload bar above player head
+            this.renderPlayerReloadBar(player, shake);
+        }
+
+        renderPlayerReloadBar(player, shake) {
+            const weaponSystem = this.game.weaponSystem;
+            const currentWeapon = weaponSystem.getCurrentWeapon();
+            
+            if (!currentWeapon || currentWeapon.id === 'knife_mk1' || currentWeapon.range || !currentWeapon.isReloading) {
+                return;
+            }
+            
+            this.ctx.save();
+            
+            // Position above player's head
+            const centerX = Math.floor(player.x + player.width / 2 + shake.x);
+            const barY = Math.floor(player.y - 15 + shake.y); // 15 pixels above player
+            
+            // Reloading text
+            this.ctx.fillStyle = '#ff5555';
+            this.ctx.font = 'bold 12px "Courier New", monospace';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('RELOADING', centerX, barY - 8);
+            
+            // Progress bar
+            const barWidth = 60;
+            const barHeight = 4;
+            const barX = centerX - (barWidth / 2);
+            
+            // Background
+            this.ctx.fillStyle = '#333';
+            this.ctx.fillRect(barX, barY, barWidth, barHeight);
+            
+            // Progress
+            const progress = (this.game.timeElapsed - currentWeapon.reloadStartTime) / currentWeapon.reloadTime;
+            const clampedProgress = Utils.clamp(progress, 0, 1);
+            
+            this.ctx.fillStyle = '#ff5555';
+            this.ctx.fillRect(barX, barY, Math.floor(barWidth * clampedProgress), barHeight);
+            
+            // Border
+            this.ctx.strokeStyle = '#555';
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeRect(barX, barY, barWidth, barHeight);
+            
+            this.ctx.restore();
+        }
+
+        renderMerchant() {
+            const merchant = this.game.shopSystem.merchant;
+            const sprite = SPRITES.computer.right;
+            this.drawSprite(sprite, Math.floor(merchant.x), Math.floor(merchant.y), merchant.width, merchant.height);
+        }
+
+        renderWeapon(shake) {
+            // Safety check to ensure weapon system is ready
+            if (!this.game.weaponSystem || !this.game.weaponSystem.inventory) return;
+            
+            const weapon = this.game.weaponSystem.getCurrentWeapon();
+            if (!weapon) return; // Safety check to prevent errors
+            
+            const gunPos = this.game.weaponSystem.getGunPosition();
+            const x = Math.floor(gunPos.x + shake.x);
+            const y = Math.floor(gunPos.y + shake.y);
+
+            if (weapon.id === 'knife_mk1' || weapon.range) {
+                const angle = this.game.player.facingRight ? 0 : Math.PI;
+                const offsetX = this.game.player.facingRight ? 4 : -4;
+                this.drawWeaponSprite(weapon.sprite, x + offsetX, y, angle);
+            } else {
+                const mouse = this.game.inputManager.mouse;
+                const angle = Math.atan2(mouse.y - gunPos.y, mouse.x - gunPos.x);
+                this.drawWeaponSprite(weapon.sprite, x, y, angle);
+            }
+        }
+
+        renderZombies() {
+            // Group zombies by sprite type for batch rendering optimization
+            const zombieGroups = new Map();
+            
+            this.game.zombies.forEach(zombie => {
+                const spriteSet = SPRITES[zombie.spriteKey];
+                const sprite = zombie.facingRight ? spriteSet.right : spriteSet.left;
+                const groupKey = `${zombie.spriteKey}_${zombie.facingRight}_${zombie.width}_${zombie.height}`;
+                
+                if (!zombieGroups.has(groupKey)) {
+                    zombieGroups.set(groupKey, { sprite, zombies: [] });
+                }
+                zombieGroups.get(groupKey).zombies.push(zombie);
+            });
+            
+            // Render each group with optimized caching
+            zombieGroups.forEach(group => {
+                const cachedSprite = this.getCachedSprite(group.sprite, group.zombies[0].width, group.zombies[0].height);
+                
+                if (cachedSprite) {
+                    // Use cached sprite for all zombies in this group
+                    group.zombies.forEach(zombie => {
+                        const { originX, originY } = this.getSpriteDrawParams(group.sprite, zombie.x, zombie.y, zombie.width, zombie.height);
+                        this.ctx.drawImage(cachedSprite.canvas, Math.floor(originX), Math.floor(originY));
+                    });
+                } else {
+                    // Fallback to individual rendering
+                    group.zombies.forEach(zombie => {
+                        this.drawSprite(group.sprite, Math.floor(zombie.x), Math.floor(zombie.y), zombie.width, zombie.height);
+                    });
+                }
+            });
+        }
+
+        drawHealthBar(x, y, width, height, hp, maxHP) {
+            const hpRatio = hp / maxHP;
+            
+            this.ctx.fillStyle = '#222';
+            this.ctx.fillRect(x, y, width, height);
+
+            this.ctx.fillStyle = hpRatio > 0.5 ? PALETTE.hpHi : 
+                                (hpRatio > 0.2 ? PALETTE.hpMid : PALETTE.hpLow);
+            this.ctx.fillRect(x, y, Math.floor(width * hpRatio), height);
+        }
+
+        renderProjectiles() {
+            this.renderBullets();
+            this.renderAcidProjectiles();
+        }
+
+        renderBullets() {
+            // Group bullets by type for batch rendering
+            const bulletRects = [];
+            const pelletRects = [];
+            
+            this.game.bullets.forEach(bullet => {
+                const size = bullet.isPellet ? 2 : 3;
+                const rect = {
+                    x: Math.floor(bullet.x - size / 2),
+                    y: Math.floor(bullet.y - size / 2),
+                    width: size,
+                    height: size
+                };
+                
+                if (bullet.isPellet) {
+                    pelletRects.push(rect);
+                } else {
+                    bulletRects.push(rect);
+                }
+            });
+            
+            // Batch render bullets by type to reduce state changes
+            this.batchFillRects(bulletRects, PALETTE.bullet);
+            this.batchFillRects(pelletRects, PALETTE.bulletPellet);
+        }
+
+        renderAcidProjectiles() {
+            this.game.acidProjectiles.forEach(projectile => {
+                const sprite = SPRITES.effects.acid;
+                if (sprite && sprite.length > 0) {
+                    this.drawSprite(sprite, Math.floor(projectile.x - 4), Math.floor(projectile.y - 4), 8, 8);
+                } else {
+                    this.ctx.fillStyle = PALETTE.acid;
+                    this.ctx.beginPath();
+                    this.ctx.arc(Math.floor(projectile.x), Math.floor(projectile.y), 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            });
+        }
+
+        renderAcidPools() {
+            this.game.acidPools.forEach(pool => {
+                // Calculate opacity based on remaining time (fade out over last 2 seconds)
+                const fadeTime = 2;
+                const opacity = pool.timeRemaining <= fadeTime ? 
+                    (pool.timeRemaining / fadeTime) * 0.8 : 0.8;
+                
+                this.ctx.globalAlpha = opacity;
+                
+                // Draw pool as a larger acid sprite or green ellipse (half height)
+                const sprite = SPRITES.effects.acid;
+                if (sprite && sprite.length > 0) {
+                    // Draw sprites in a 3x2 grid (half height) to create a puddle effect
+                    for (let i = 0; i < 3; i++) {
+                        for (let j = 0; j < 2; j++) { // Only 2 rows instead of 3
+                            const offsetX = (i - 1) * 8;
+                            const offsetY = j * 6; // Smaller vertical spacing
+                            this.drawSprite(sprite, 
+                                Math.floor(pool.x + offsetX), 
+                                Math.floor(pool.y + offsetY), 
+                                10, 8); // Slightly shorter sprites
+                        }
+                    }
+                } else {
+                    // Fallback: draw as green ellipse (half height)
+                    this.ctx.fillStyle = PALETTE.acid;
+                    this.ctx.beginPath();
+                    this.ctx.ellipse(
+                        Math.floor(pool.x + pool.width / 2), 
+                        Math.floor(pool.y + pool.height / 2), 
+                        pool.width / 2, pool.height / 2, // Use actual height for ellipse
+                        0, 0, Math.PI * 2
+                    );
+                    this.ctx.fill();
+                }
+                
+                this.ctx.globalAlpha = 1; // Reset opacity
+            });
+        }
+
+        renderEffects(shake) {
+            const effects = this.game.effectsManager;
+            
+            this.renderMuzzleFlash(effects.muzzleFlash);
+            this.renderMeleeSlash(effects.meleeSlash);
+            this.renderWaveAnnouncement(effects.waveAnnouncement);
+            this.renderHitEffects(effects.hitEffects);
+        }
+
+        renderMuzzleFlash(muzzleFlash) {
+            if (!muzzleFlash.active) return;
+            
+            const radius = 1 + Math.floor(Math.random() * 2);
+            this.ctx.fillStyle = PALETTE.muzzleFlash;
+            this.ctx.fillRect(
+                Math.floor(muzzleFlash.x) - radius,
+                Math.floor(muzzleFlash.y) - radius,
+                radius * 2 + 1,
+                radius * 2 + 1
+            );
+        }
+
+        renderMeleeSlash(meleeSlash) {
+            if (!meleeSlash.active) return;
+            
+            this.ctx.save();
+            this.ctx.strokeStyle = PALETTE.white;
+            this.ctx.lineWidth = 3;
+            this.ctx.globalAlpha = meleeSlash.timer / 0.15;
+
+            const slashLength = 18;
+            this.ctx.beginPath();
+            this.ctx.moveTo(Math.floor(meleeSlash.x), Math.floor(meleeSlash.y));
+            const endX = meleeSlash.facingRight ? 
+                Math.floor(meleeSlash.x) + slashLength : 
+                Math.floor(meleeSlash.x) - slashLength;
+            this.ctx.lineTo(endX, Math.floor(meleeSlash.y));
+            this.ctx.stroke();
+            this.ctx.restore();
+        }
+
+        renderWaveAnnouncement(announcement) {
+            if (!announcement.active) return;
+            
+            this.ctx.save();
+            this.ctx.font = 'bold 48px "Courier New", monospace';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.globalAlpha = Math.min(1, announcement.timer / 0.5);
+            
+            const centerX = MobileDetector.getWorldWidth() / 2;
+            const centerY = MobileDetector.getWorldHeight() / 2;
+            
+            this.ctx.fillStyle = PALETTE.black;
+            this.ctx.fillText(announcement.text, centerX + 2, centerY + 2);
+            
+            this.ctx.fillStyle = '#ffd54a';
+            this.ctx.fillText(announcement.text, centerX, centerY);
+            
+            this.ctx.restore();
+        }
+
+        renderHitEffects(hitEffects) {
+            hitEffects.forEach(effect => {
+                const alpha = effect.timer / effect.maxTimer;
+                this.ctx.save();
+                this.ctx.globalAlpha = alpha;
+                
+                const sprite = SPRITES.effects[effect.type];
+                if (sprite && sprite.length > 0) {
+                    let size, width, height, offsetX, offsetY;
+                    
+                    if (effect.type === 'fatExplosion') {
+                        // Use fat zombie dimensions for fat explosion
+                        width = 50;
+                        height = 44;
+                        offsetX = width / 2;
+                        offsetY = height / 2;
+                        this.drawSprite(sprite, Math.floor(effect.x - offsetX), Math.floor(effect.y - offsetY), width, height);
+                    } else {
+                        size = effect.type === 'headshot' ? 16 : 8;
+                        const offset = size / 2;
+                        this.drawSprite(sprite, Math.floor(effect.x - offset), Math.floor(effect.y - offset), size, size);
+                    }
+                } else {
+                    const color = this.getEffectColor(effect.type);
+                    this.ctx.fillStyle = color;
+                    this.ctx.beginPath();
+                    this.ctx.arc(Math.floor(effect.x), Math.floor(effect.y), 3, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+                
+                this.ctx.restore();
+            });
+        }
+
+        getEffectColor(type) {
+            const colorMap = {
+                'headshot': PALETTE.headshot,
+                'spark': PALETTE.yellow,
+                'blood': PALETTE.red
+            };
+            return colorMap[type] || PALETTE.red;
+        }
+
+        renderUI() {
+            this.renderPlayerHealthBar();
+            this.renderWeaponSlots();
+            this.renderMerchantHint();
+            
+            if (CONFIG.DEBUG_MODE) {
+                this.renderDebugInfo();
+            }
+        }
+
+        renderPlayerHealthBar() {
+            const player = this.game.player;
+            const isMobile = MobileDetector.isMobile();
+            
+            // Mobile-responsive positioning and sizing - with 5px top padding
+            const x = 0;
+            const y = 5;
+            const maxWidth = isMobile ? Math.min(CONFIG.HP_BAR_WIDTH, MobileDetector.getWorldWidth() - 60) : CONFIG.HP_BAR_WIDTH;
+            const width = Math.max(180, maxWidth); // Minimum width of 180px
+            const height = CONFIG.HP_BAR_HEIGHT;
+
+            this.ctx.fillStyle = '#111';
+            this.ctx.fillRect(x - 2, y - 2, width + 4, height + 4);
+
+            this.drawHealthBar(x, y, width, height, player.hp, player.maxHP);
+
+            this.ctx.strokeStyle = '#555';
+            this.ctx.strokeRect(x, y, width, height);
+
+            // Health bar only - no text
+        }
+
+        renderWeaponSlots() {
+            const slots = ['main1', 'main2', 'side'];
+            const weaponSystem = this.game.weaponSystem;
+            const isMobile = MobileDetector.isMobile();
+            const worldWidth = MobileDetector.getWorldWidth();
+            
+            // Mobile-responsive positioning and sizing
+            let tableX, colWidth, colWidths;
+            let columnSpacing;
+            
+            if (isMobile) {
+                // On mobile, center the weapon HUD with adaptive column widths
+                const charWidth = 9; // Courier New 16px approximate width
+                const padding = 15; // Padding for better readability
+                columnSpacing = 10; // Consistent 10px spacing between columns
+                
+                // Calculate individual column widths based on actual weapon names
+                colWidths = slots.map(slot => {
+                    const weapon = weaponSystem.inventory[slot];
+                    if (weapon) {
+                        const nameLength = weapon.name.length;
+                        return (nameLength * charWidth) + padding;
+                    } else {
+                        return (8 * charWidth) + padding; // "Empty" = 5 chars + padding
+                    }
+                });
+                
+                // Calculate total width including spacing
+                const totalWidth = colWidths.reduce((sum, width) => sum + width, 0) + (columnSpacing * 2);
+                
+                // Center the entire weapon HUD
+                tableX = (worldWidth - totalWidth) / 2;
+                
+                // Ensure the weapon HUD doesn't overlap with the health bar
+                const healthBarWidth = Math.min(CONFIG.HP_BAR_WIDTH, worldWidth - 60);
+                const minTableX = healthBarWidth + 30; // Increased spacing after health bar
+                
+                if (tableX < minTableX) {
+                    tableX = minTableX;
+                }
+            } else {
+                // Desktop: Position to the right of the health bar (health bar ends at x = 260)
+                tableX = 260;  // 0 + 260 (health bar start + width)
+                columnSpacing = 10; // Same 10px spacing as mobile for consistency
+                
+                // For desktop, also use adaptive column widths based on text content
+                const charWidth = 9; // Courier New 16px approximate width
+                const padding = 20; // Slightly more padding on desktop for better readability
+                
+                colWidths = slots.map(slot => {
+                    const weapon = weaponSystem.inventory[slot];
+                    if (weapon) {
+                        const nameLength = weapon.name.length;
+                        return (nameLength * charWidth) + padding;
+                    } else {
+                        return (8 * charWidth) + padding; // "Empty" = 5 chars + padding
+                    }
+                });
+                
+                // Position the weapon HUD 10px after the health bar ends
+                tableX = 260 + 10;
+            }
+            
+            const tableY = isMobile ? 8 : 5;   // Slightly more padding on mobile for better touch targets
+            const rowHeight = isMobile ? 22 : 20;  // Slightly taller rows on mobile for better readability
+            
+            // Render each column (weapon slot)
+            slots.forEach((slot, colIndex) => {
+                // Safety check to ensure colWidths is defined
+                if (!colWidths || !colWidths[colIndex]) {
+                    console.warn('colWidths not properly defined for slot:', slot, 'index:', colIndex);
+                    return;
+                }
+                
+                let currentX = tableX;
+                
+                // Calculate x position based on previous column widths and spacing
+                for (let i = 0; i < colIndex; i++) {
+                    currentX += colWidths[i] + columnSpacing;
+                }
+                
+                const currentColWidth = colWidths[colIndex];
+                
+                // Add background rectangle for each weapon slot on mobile (without borders)
+                if (isMobile) {
+                    this.ctx.save();
+                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+                    this.ctx.fillRect(currentX - 5, tableY - 5, currentColWidth + 10, (rowHeight * 2) + 10);
+                    this.ctx.restore();
+                }
+                
+                // Row 1: Weapon names (no slot labels)
+                this.renderWeaponName(slot, currentX, tableY, weaponSystem, currentColWidth, rowHeight);
+                
+                // Row 2: Ammo/reload info
+                this.renderWeaponAmmoInfo(slot, currentX, tableY + rowHeight, weaponSystem, currentColWidth, rowHeight);
+            });
+        }
+
+        renderSlotLabel(slot, index, x, y, weaponSystem, colWidth, rowHeight) {
+            this.ctx.save();
+            
+            const isSelected = slot === weaponSystem.currentSlot;
+            this.ctx.fillStyle = isSelected ? '#ffd54a' : '#fff';
+            this.ctx.font = 'bold 16px "Courier New", monospace';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.textAlign = 'center';
+            
+            const centerX = x + (colWidth / 2);
+            const centerY = y + (rowHeight / 2);
+            this.ctx.fillText(`${index + 1}. ${slot.toUpperCase()}`, centerX, centerY);
+            
+            this.ctx.restore();
+        }
+
+        renderWeaponName(slot, x, y, weaponSystem, colWidth, rowHeight) {
+            this.ctx.save();
+            
+            const weapon = weaponSystem.inventory[slot];
+            const isSelected = slot === weaponSystem.currentSlot;
+            
+            if (weapon) {
+                // Highlight selected weapon with different color and style
+                if (isSelected) {
+                    this.ctx.fillStyle = '#ffd54a'; // Yellow for selected weapon
+                    this.ctx.font = 'bold 18px "Courier New", monospace'; // Slightly larger font
+                } else {
+                    this.ctx.fillStyle = '#9cf'; // Blue for unselected weapons
+                    this.ctx.font = 'bold 16px "Courier New", monospace';
+                }
+                
+                this.ctx.textBaseline = 'middle';
+                this.ctx.textAlign = 'center';
+                
+                const centerX = x + (colWidth / 2);
+                const centerY = y + (rowHeight / 2);
+                this.ctx.fillText(weapon.name, centerX, centerY);
+            } else {
+                this.ctx.fillStyle = '#888';
+                this.ctx.font = 'bold 16px "Courier New", monospace';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.textAlign = 'center';
+                
+                const centerX = x + (colWidth / 2);
+                const centerY = y + (rowHeight / 2);
+                this.ctx.fillText('Empty', centerX, centerY);
+            }
+            
+            this.ctx.restore();
+        }
+
+        renderWeaponAmmoInfo(slot, x, y, weaponSystem, colWidth, rowHeight) {
+            this.ctx.save();
+            
+            const weapon = weaponSystem.inventory[slot];
+            if (weapon && weapon.id !== 'knife_mk1' && !weapon.range && weapon.ammo) {
+                // Always show ammo count, reload bar now appears above player
+                this.ctx.fillStyle = weapon.isReloading ? '#888' : '#ffd54a';
+                this.ctx.font = 'bold 16px "Courier New", monospace';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.textAlign = 'center';
+                
+                const centerX = x + (colWidth / 2);
+                const centerY = y + (rowHeight / 2);
+                this.ctx.fillText(`${weapon.ammo.current}/∞`, centerX, centerY);
+            } else if (weapon) {
+                // For weapons without ammo (like knife), show a placeholder to maintain alignment
+                this.ctx.fillStyle = '#666';
+                this.ctx.font = 'bold 16px "Courier New", monospace';
+                this.ctx.textBaseline = 'middle';
+                this.ctx.textAlign = 'center';
+                
+                const centerX = x + (colWidth / 2);
+                const centerY = y + (rowHeight / 2);
+                this.ctx.fillText('---', centerX, centerY);
+            }
+            
+            this.ctx.restore();
+        }
+
+
+
+        renderReloadingBar(weapon, x, y, colWidth, rowHeight) {
+            this.ctx.save();
+            
+            // Reloading text
+            this.ctx.fillStyle = '#ff5555';
+            this.ctx.font = 'bold 14px "Courier New", monospace';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.textAlign = 'center';
+            
+            const centerX = x + (colWidth / 2);
+            const centerY = y + (rowHeight / 2);
+            this.ctx.fillText('RELOADING', centerX, centerY);
+            
+            // Progress bar below the text
+            const barWidth = Math.min(80, colWidth - 20);
+            const barHeight = 3;
+            const barX = centerX - (barWidth / 2);
+            const barY = centerY + 12;
+            
+            // Background
+            this.ctx.fillStyle = '#333';
+            this.ctx.fillRect(barX, barY, barWidth, barHeight);
+            
+            // Progress
+            const progress = (this.game.timeElapsed - weapon.reloadStartTime) / weapon.reloadTime;
+            const clampedProgress = Utils.clamp(progress, 0, 1);
+            
+            this.ctx.fillStyle = '#ff5555';
+            this.ctx.fillRect(barX, barY, Math.floor(barWidth * clampedProgress), barHeight);
+            
+            // Border
+            this.ctx.strokeStyle = '#555';
+            this.ctx.lineWidth = 1;
+            this.ctx.strokeRect(barX, barY, barWidth, barHeight);
+            
+            this.ctx.restore();
+        }
+
+
+
+        renderMerchantHint() {
+            if (this.game.waveSystem.gameStage !== 'peaceful') return;
+            
+            const distance = this.game.shopSystem.getPlayerDistance();
+            const merchant = this.game.shopSystem.merchant;
+            
+            if (distance <= merchant.interactionRange) {
+                this.ctx.fillStyle = PALETTE.white;
+                this.ctx.font = '16px monospace';
+                this.ctx.textAlign = 'left';
+                
+                const textX = merchant.x + merchant.width / 2; // Start text at the red line position
+                const textY = merchant.y - 10;
+                
+                this.ctx.fillText('Press E to access computer', textX, textY);
+            }
+        }
+
+        renderDebugInfo() {
+            this.ctx.fillStyle = '#666';
+            this.ctx.font = '10px monospace';
+            this.ctx.fillText(`v${CONFIG.GAME_VERSION}`, MobileDetector.getWorldWidth() - 80, 20);
+            
+            // Add scale and window info
+            if (this.game.currentScale !== undefined) {
+                this.ctx.font = 'bold 14px "Courier New", monospace';
+                this.ctx.textBaseline = 'top';
+                this.ctx.fillStyle = '#666';
+                this.ctx.fillText(`Scale: ${this.game.currentScale.toFixed(2)}`, MobileDetector.getWorldWidth() - 80, 35);
+                this.ctx.fillText(`Window: ${window.innerWidth}x${window.innerHeight}`, MobileDetector.getWorldWidth() - 80, 50);
+                this.ctx.fillText(`Mouse: ${Math.round(this.game.inputManager.mouse.x)},${Math.round(this.game.inputManager.mouse.y)}`, MobileDetector.getWorldWidth() - 80, 65);
+            }
+            
+            // Show debug info only when DEBUG_MODE is enabled
+            if (CONFIG.DEBUG_MODE) {
+                if (this.game.currentScale !== undefined) {
+                    this.ctx.fillStyle = '#ff0000';
+                    this.ctx.font = 'bold 16px "Courier New", monospace';
+                    this.ctx.textBaseline = 'top';
+                    const canvas = this.game.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    this.ctx.fillText(`Canvas Pos: ${Math.round(rect.left)},${Math.round(rect.top)}`, 10, 100);
+                    this.ctx.fillText(`Canvas Size: ${Math.round(rect.width)}x${Math.round(rect.height)}`, 10, 120);
+                    this.ctx.fillText(`Scale: ${this.game.currentScale.toFixed(3)}`, 10, 140);
+                }
+            }
+            
+            if (CONFIG.DEBUG_MODE) {
+                this.renderHeadshotZones();
+            }
+        }
+
+        renderHeadshotZones() {
+            this.game.zombies.forEach(zombie => {
+                const spriteSet = SPRITES[zombie.spriteKey];
+                const sprite = zombie.facingRight ? spriteSet.right : spriteSet.left;
+                
+                if (!sprite || sprite.length === 0) return;
+                
+                const { originY, cellHeight } = this.getSpriteMetrics(sprite, zombie);
+                const headshotHeight = Math.ceil(sprite.length * CONFIG.HEADSHOT_ZONE_HEIGHT_RATIO) * cellHeight;
+                
+                this.ctx.strokeStyle = '#ff0000';
+                this.ctx.lineWidth = 2;
+                this.ctx.setLineDash([5, 5]);
+                this.ctx.strokeRect(zombie.x, originY, zombie.width, headshotHeight);
+                this.ctx.setLineDash([]);
+            });
+        }
+
+        renderGameOver() {
+            const worldWidth = MobileDetector.getWorldWidth();
+            const worldHeight = MobileDetector.getWorldHeight();
+            const isMobile = MobileDetector.isMobile();
+            
+            this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            this.ctx.fillRect(0, 0, worldWidth, worldHeight);
+
+            this.ctx.fillStyle = '#ff5555';
+            this.ctx.font = 'bold 32px "Courier New", monospace';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText('YOU DIED', worldWidth / 2, worldHeight / 2);
+
+            this.ctx.fillStyle = '#ccc';
+            this.ctx.font = 'bold 18px "Courier New", monospace';
+            
+            // Show appropriate restart instruction based on device type
+            const restartText = isMobile ? 'Touch screen to restart' : 'Press Space to restart';
+            this.ctx.fillText(restartText, worldWidth / 2, worldHeight / 2 + 40);
+        }
+
+        drawSprite(sprite, x, y, width, height) {
+            if (!sprite || !Array.isArray(sprite) || sprite.length === 0) return;
+
+            // Use cached sprite for better performance
+            const cachedSprite = this.getCachedSprite(sprite, width, height);
+            if (cachedSprite) {
+                const { originX, originY } = this.getSpriteDrawParams(sprite, x, y, width, height);
+                this.ctx.drawImage(cachedSprite.canvas, Math.floor(originX), Math.floor(originY));
+                return;
+            }
+
+            // Fallback to pixel-by-pixel rendering if caching fails
+            const { scaleX, scaleY, originX, originY } = this.getSpriteDrawParams(sprite, x, y, width, height);
+            const cellWidth = Math.max(1, scaleX);
+            const cellHeight = Math.max(1, scaleY);
+
+            for (let row = 0; row < sprite.length; row++) {
+                const line = sprite[row];
+                if (!line || typeof line !== 'string') continue;
+                
+                for (let col = 0; col < line.length; col++) {
+                    const char = line[col];
+                    if (char === '.') continue;
+                    
+                    const colorKey = SPRITE_COLOR_MAP[char];
+                    if (!colorKey) continue;
+                    
+                    this.ctx.fillStyle = PALETTE[colorKey];
+                    this.ctx.fillRect(
+                        Math.floor(originX + col * cellWidth),
+                        Math.floor(originY + row * cellHeight),
+                        cellWidth,
+                        cellHeight
+                    );
+                }
+            }
+        }
+
+        getSpriteDrawParams(sprite, x, y, width, height) {
+            const actualWidth = sprite[0].length;
+            const actualHeight = sprite.length;
+            const scaleX = Math.floor(width / actualWidth);
+            const scaleY = Math.floor(height / actualHeight);
+            const cellWidth = Math.max(1, scaleX);
+            const cellHeight = Math.max(1, scaleY);
+            const originX = Math.floor(x + (width - actualWidth * cellWidth) / 2);
+            const originY = Math.floor(y + (height - actualHeight * cellHeight));
+            
+            return { scaleX, scaleY, originX, originY, actualWidth, actualHeight };
+        }
+
+        getSpriteMetrics(sprite, entity) {
+            const spriteHeight = sprite.length;
+            const scaleY = Math.floor(entity.height / spriteHeight);
+            const cellHeight = Math.max(1, scaleY);
+            const originY = Math.floor(entity.y + (entity.height - spriteHeight * cellHeight));
+            
+            return { originY, cellHeight };
+        }
+
+        drawWeaponSprite(spriteKey, x, y, angle) {
+            const sprite = SPRITES.weapons[spriteKey];
+            if (!sprite) return;
+
+            const pixelSize = 3;
+            this.ctx.save();
+            this.ctx.translate(x, y);
+            this.ctx.rotate(angle);
+
+            if (Math.cos(angle) < 0) {
+                this.ctx.scale(1, -1);
+            }
+
+            const spriteWidth = sprite[0].length;
+            const spriteHeight = sprite.length;
+            const startX = -(spriteWidth * pixelSize) / 2;
+            const startY = -(spriteHeight * pixelSize) / 2;
+
+            for (let row = 0; row < spriteHeight; row++) {
+                const line = sprite[row];
+                for (let col = 0; col < spriteWidth; col++) {
+                    if (line[col] === 'b') {
+                        this.ctx.fillStyle = PALETTE.gunMetal;
+                        this.ctx.fillRect(
+                            Math.floor(startX + col * pixelSize - 0.5),
+                            Math.floor(startY + row * pixelSize - 0.5),
+                            pixelSize + 1,
+                            pixelSize + 1
+                        );
+                    }
+                }
+            }
+
+            this.ctx.restore();
+        }
+    }
+
+    // =====================================================
+    // PHYSICS ENGINE
+    // =====================================================
+    class PhysicsEngine {
+        constructor(game) {
+            this.game = game;
+        }
+
+        update(dt) {
+            this.updatePlayer(dt);
+            this.updateBullets(dt);
+            this.updateAcidProjectiles(dt);
+            this.updateAcidPools(dt);
+            this.updateZombies(dt);
+        }
+
+        updatePlayer(dt) {
+            const player = this.game.player;
+            const input = this.game.inputManager;
+            
+            // Get movement input from keyboard or mobile
+            let moveDir = 0;
+            if (input.mobileInput) {
+                // Mobile input
+                const mobileInput = input.getMobileMovementInput();
+                moveDir = mobileInput.x;
+            } else {
+                // Keyboard input
+                moveDir = (input.keys.a ? -1 : 0) + (input.keys.d ? 1 : 0);
+            }
+            
+            // Apply movement
+            player.velocityX += (moveDir * CONFIG.PLAYER_MOVE_SPEED - player.velocityX) * 0.4;
+            player.x += player.velocityX * dt;
+            player.x = Utils.clamp(player.x, 0, MobileDetector.getWorldWidth() - player.width);
+
+            // Vertical movement (gravity)
+            player.velocityY += CONFIG.GRAVITY * dt;
+            player.y += player.velocityY * dt;
+
+            // Ground collision
+            const groundY = Utils.getGroundY(MobileDetector.getWorldHeight(), player.height);
+            if (player.y > groundY) {
+                player.y = groundY;
+                player.velocityY = 0;
+                player.onGround = true;
+            } else {
+                player.onGround = false;
+            }
+
+            // Ceiling collision
+            if (player.y < 0) {
+                player.y = 0;
+                player.velocityY = 0;
+            }
+
+            // Update facing direction
+            const centerX = player.x + player.width / 2;
+            player.facingRight = input.mouse.x >= centerX;
+        }
+
+        updateBullets(dt) {
+            const bullets = this.game.bullets;
+            
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                const bullet = bullets[i];
+
+                // Apply gravity
+                bullet.velocityY += CONFIG.BULLET_GRAVITY * dt;
+
+                // Update position
+                bullet.x += bullet.velocityX * dt;
+                bullet.y += bullet.velocityY * dt;
+
+                // Check zombie hits
+                const hitResult = this.checkBulletHits(bullet);
+                
+                if (hitResult.hit) {
+                    this.handleBulletHit(hitResult);
+                    bullets.splice(i, 1);
+                } else if (this.shouldRemoveBullet(bullet)) {
+                    this.game.effectsManager.createHitEffect(bullet.x, bullet.y, 'spark');
+                    bullets.splice(i, 1);
+                }
+            }
+        }
+
+        handleBulletHit(hitResult) {
+            this.game.effectsManager.createHitEffect(hitResult.x, hitResult.y, hitResult.type, hitResult);
+            
+            if (hitResult.isHeadshot) {
+                this.game.effectsManager.addScreenShake(8);
+                // Play satisfying headshot sound
+                this.game.audioManager.playSound('headshot');
+            } else {
+                // Play pleasant body hit sound
+                this.game.audioManager.playSound('bodyHit');
+            }
+        }
+
+        checkBulletHits(bullet) {
+            const zombies = this.game.zombies;
+            
+            for (let j = zombies.length - 1; j >= 0; j--) {
+                const zombie = zombies[j];
+                
+                if (this.isBulletInBounds(bullet, zombie) && this.checkPixelPerfectCollision(bullet, zombie)) {
+                    const isHeadshot = this.checkHeadshot(bullet, zombie);
+                    const damage = isHeadshot ? 
+                        Math.floor(bullet.damage * CONFIG.HEADSHOT_DAMAGE_MULTIPLIER) : 
+                        bullet.damage;
+                    
+                    const zombieDied = this.game.damageZombie(zombie, damage);
+
+                    if (zombieDied) {
+                        zombies.splice(j, 1);
+                    }
+                    
+                    return { 
+                        hit: true, 
+                        type: isHeadshot ? 'headshot' : 'blood', 
+                        x: bullet.x, 
+                        y: bullet.y,
+                        isHeadshot,
+                        damage,
+                        originalDamage: bullet.damage
+                    };
+                }
+            }
+            
+            return { hit: false };
+        }
+
+        isBulletInBounds(bullet, zombie) {
+            return bullet.x >= zombie.x && bullet.x <= zombie.x + zombie.width &&
+                   bullet.y >= zombie.y && bullet.y <= zombie.y + zombie.height;
+        }
+
+        checkPixelPerfectCollision(bullet, zombie) {
+            const spriteSet = SPRITES[zombie.spriteKey];
+            const sprite = zombie.facingRight ? spriteSet.right : spriteSet.left;
+            
+            if (!sprite || !Array.isArray(sprite) || sprite.length === 0) {
+                return false;
+            }
+
+            const collision = this.getPixelCollisionPoint(bullet, zombie, sprite);
+            return collision.hit;
+        }
+
+        checkHeadshot(bullet, zombie) {
+            const spriteSet = SPRITES[zombie.spriteKey];
+            const sprite = zombie.facingRight ? spriteSet.right : spriteSet.left;
+            
+            if (!sprite || !Array.isArray(sprite) || sprite.length === 0) {
+                return false;
+            }
+
+            const collision = this.getPixelCollisionPoint(bullet, zombie, sprite);
+            if (!collision.hit) return false;
+            
+            const headshotZoneHeight = Math.ceil(sprite.length * CONFIG.HEADSHOT_ZONE_HEIGHT_RATIO);
+            return collision.spriteY < headshotZoneHeight;
+        }
+
+        getPixelCollisionPoint(bullet, zombie, sprite) {
+            const spriteWidth = sprite[0].length;
+            const spriteHeight = sprite.length;
+            const scaleX = Math.floor(zombie.width / spriteWidth);
+            const scaleY = Math.floor(zombie.height / spriteHeight);
+            const cellWidth = Math.max(1, scaleX);
+            const cellHeight = Math.max(1, scaleY);
+            
+            const originX = Math.floor(zombie.x + (zombie.width - spriteWidth * cellWidth) / 2);
+            const originY = Math.floor(zombie.y + (zombie.height - spriteHeight * cellHeight));
+
+            const relativeX = Math.floor(bullet.x - originX);
+            const relativeY = Math.floor(bullet.y - originY);
+            
+            const spriteX = Math.floor(relativeX / cellWidth);
+            const spriteY = Math.floor(relativeY / cellHeight);
+            
+            if (spriteX < 0 || spriteX >= spriteWidth || spriteY < 0 || spriteY >= spriteHeight) {
+                return { hit: false };
+            }
+            
+            const spriteChar = sprite[spriteY][spriteX];
+            return { 
+                hit: spriteChar !== '.', 
+                spriteX, 
+                spriteY 
+            };
+        }
+
+        shouldRemoveBullet(bullet) {
+            const worldHeight = MobileDetector.getWorldHeight();
+            const worldWidth = MobileDetector.getWorldWidth();
+            const groundY = worldHeight - CONFIG.GROUND_HEIGHT - CONFIG.GROUND_COLLISION_OFFSET;
+            
+            return bullet.x < -10 || bullet.x > worldWidth + 10 ||
+                   bullet.y < -10 || bullet.y > worldHeight + 10 ||
+                   bullet.y >= groundY;
+        }
+
+        updateAcidProjectiles(dt) {
+            const projectiles = this.game.acidProjectiles;
+            
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const projectile = projectiles[i];
+
+                // Apply gravity (same as bullets)
+                projectile.velocityY += CONFIG.BULLET_GRAVITY * dt;
+
+                // Update position
+                projectile.x += projectile.velocityX * dt;
+                projectile.y += projectile.velocityY * dt;
+
+                if (this.checkAcidPlayerHit(projectile)) {
+                    this.game.applyDamage(projectile.damage);
+                    this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'acid');
+                    projectiles.splice(i, 1);
+                } else if (this.shouldRemoveProjectile(projectile)) {
+                    // Check if projectile hit the ground to create acid pool
+                    if (this.projectileHitGround(projectile)) {
+                        this.createAcidPool(projectile.x, projectile.y);
+                        this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'acid');
+                    } else {
+                        this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'spark');
+                    }
+                    projectiles.splice(i, 1);
+                }
+            }
+        }
+
+        checkAcidPlayerHit(projectile) {
+            const player = this.game.player;
+            return Utils.checkEntityCollision(projectile, player);
+        }
+
+        shouldRemoveProjectile(projectile) {
+            const worldHeight = MobileDetector.getWorldHeight();
+            const worldWidth = MobileDetector.getWorldWidth();
+            const groundY = worldHeight - CONFIG.GROUND_HEIGHT - CONFIG.GROUND_COLLISION_OFFSET;
+            
+            return projectile.x < -10 || projectile.x > worldWidth + 10 ||
+                   projectile.y < -10 || projectile.y > worldHeight + 10 ||
+                   projectile.y >= groundY;
+        }
+
+        projectileHitGround(projectile) {
+            const worldHeight = MobileDetector.getWorldHeight();
+            const groundY = worldHeight - CONFIG.GROUND_HEIGHT - CONFIG.GROUND_COLLISION_OFFSET;
+            return projectile.y >= groundY;
+        }
+
+        createAcidPool(x, y) {
+            // Don't create overlapping pools - check if there's already one nearby
+            const existingPool = this.game.acidPools.find(pool => {
+                const distance = Math.sqrt((pool.x - x) ** 2 + (pool.y - y) ** 2);
+                return distance < 40; // 40 pixel minimum distance between pools
+            });
+            
+            if (!existingPool) {
+                this.game.acidPools.push({
+                    x: x - 15, // Center the pool around impact point
+                    y: y - 8.5, // Center the pool around impact point (moved 1 pixel up)
+                    width: 30,
+                    height: 15, // Half height for puddle effect
+                    damage: 8, // Damage per second
+                    duration: 10, // Pool lasts 10 seconds
+                    timeRemaining: 10
+                });
+            }
+        }
+
+        updateAcidPools(dt) {
+            const pools = this.game.acidPools;
+            
+            for (let i = pools.length - 1; i >= 0; i--) {
+                const pool = pools[i];
+                
+                // Update pool lifetime
+                pool.timeRemaining -= dt;
+                
+                // Check player collision with acid pool
+                if (this.checkPlayerAcidPoolCollision(pool)) {
+                    this.game.applyDamage(pool.damage * dt); // Damage over time
+                    // Create small damage effect occasionally
+                    if (Math.random() < 0.3) {
+                        this.game.effectsManager.createHitEffect(
+                            pool.x + Math.random() * pool.width,
+                            pool.y + Math.random() * pool.height,
+                            'acid'
+                        );
+                    }
+                }
+                
+                // Remove expired pools
+                if (pool.timeRemaining <= 0) {
+                    pools.splice(i, 1);
+                }
+            }
+        }
+
+        checkPlayerAcidPoolCollision(pool) {
+            const player = this.game.player;
+            return Utils.checkEntityCollision(player, pool);
+        }
+
+        updateZombies(dt) {
+            this.game.zombies.forEach(zombie => {
+                this.updateZombieAI(zombie, dt);
+                
+                // Apply gravity and ground collision for worm zombies, keep others on ground
+                if (zombie.spriteKey === 'zombieWorm') {
+                    this.updateWormPhysics(zombie, dt);
+                } else {
+                    this.keepZombieOnGround(zombie);
+                }
+                
+                this.checkZombiePlayerCollision(zombie);
+            });
+        }
+
+        updateZombieAI(zombie, dt) {
+            const player = this.game.player;
+            const zombieCenterX = zombie.x + zombie.width / 2;
+            const playerCenterX = player.x + player.width / 2;
+            const distanceX = playerCenterX - zombieCenterX;
+            const totalDistance = Utils.getDistance(zombie.x, zombie.y, player.x, player.y);
+            
+            if (zombie.spriteKey === 'zombieSpitter') {
+                this.updateSpitterAI(zombie, player, totalDistance, distanceX, dt);
+            } else {
+                this.updateBasicZombieAI(zombie, distanceX, dt);
+            }
+
+            if (Math.abs(distanceX) > 5) {
+                zombie.facingRight = distanceX > 0;
+            }
+        }
+
+        updateBasicZombieAI(zombie, distanceX, dt) {
+            const moveThreshold = 20;
+            
+            if (Math.abs(distanceX) > moveThreshold) {
+                const dirX = Math.sign(distanceX);
+                zombie.velocityX = dirX * zombie.speed;
+                zombie.x += zombie.velocityX * dt;
+                zombie.x = Utils.clamp(zombie.x, 0, MobileDetector.getWorldWidth() - zombie.width);
+            } else {
+                this.handleZombieStuck(zombie, dt);
+            }
+        }
+
+        handleZombieStuck(zombie, dt) {
+            if (!zombie.stuckTimer) zombie.stuckTimer = 0;
+            zombie.stuckTimer += dt;
+            
+            if (zombie.stuckTimer > 1.0) {
+                zombie.velocityX = (Math.random() - 0.5) * 30;
+                zombie.stuckTimer = 0;
+            } else {
+                zombie.velocityX = 0;
+            }
+        }
+
+        updateSpitterAI(zombie, player, totalDistance, distanceX, dt) {
+            const idealRange = zombie.attackRange;
+            const worldWidth = MobileDetector.getWorldWidth();
+            const minX = 50; // Minimum distance from left edge
+            const maxX = worldWidth - zombie.width - 50; // Maximum distance from right edge
+            
+            // Check if spitter would move off-screen
+            const wouldExitLeft = zombie.x <= minX && distanceX < 0;
+            const wouldExitRight = zombie.x >= maxX && distanceX > 0;
+            
+            if (totalDistance < idealRange * 0.7 && !wouldExitLeft && !wouldExitRight) {
+                // Too close, back away (but only if it won't go off-screen)
+                const direction = -Math.sign(distanceX);
+                if ((direction < 0 && zombie.x > minX) || (direction > 0 && zombie.x < maxX)) {
+                    this.moveZombie(zombie, direction, zombie.speed * 0.8, dt);
+                } else {
+                    // Can't back away, just attack
+                    zombie.velocityX = 0;
+                    this.trySpitterAttack(zombie, player);
+                }
+            } else if (totalDistance > idealRange * 1.2) {
+                // Too far, move closer
+                const direction = Math.sign(distanceX);
+                if ((direction < 0 && zombie.x > minX) || (direction > 0 && zombie.x < maxX)) {
+                    this.moveZombie(zombie, direction, zombie.speed * 0.6, dt);
+                } else {
+                    // Can't move closer without going off-screen, just attack
+                    zombie.velocityX = 0;
+                    this.trySpitterAttack(zombie, player);
+                }
+            } else {
+                // In range, stop and attack
+                zombie.velocityX = 0;
+                this.trySpitterAttack(zombie, player);
+            }
+        }
+
+        moveZombie(zombie, direction, speed, dt) {
+            zombie.velocityX = direction * speed;
+            zombie.x += zombie.velocityX * dt;
+            zombie.x = Utils.clamp(zombie.x, 0, this.game.canvas.width - zombie.width);
+        }
+
+        trySpitterAttack(zombie, player) {
+            const now = this.game.timeElapsed;
+            if (now - zombie.lastAttackTime < zombie.attackCooldown) return;
+            
+            const direction = Utils.getDirection(
+                zombie.x + zombie.width / 2,
+                zombie.y + zombie.height / 2,
+                player.x + player.width / 2,
+                player.y + player.height / 2
+            );
+            
+            this.createAcidProjectile(zombie, direction);
+            zombie.lastAttackTime = now;
+            this.game.effectsManager.addScreenShake(3);
+        }
+
+        createAcidProjectile(zombie, direction) {
+            this.game.acidProjectiles.push({
+                x: zombie.x + zombie.width / 2,
+                y: zombie.y + zombie.height / 2,
+                width: 6,
+                height: 6,
+                velocityX: direction.x * zombie.projectileSpeed,
+                velocityY: direction.y * zombie.projectileSpeed,
+                damage: zombie.projectileDamage
+            });
+        }
+
+        updateWormPhysics(zombie, dt) {
+            // Apply gravity to worm zombies
+            zombie.velocityY += CONFIG.GRAVITY * dt;
+            zombie.y += zombie.velocityY * dt;
+            
+            // Ground collision
+            const groundY = Utils.getGroundY(MobileDetector.getWorldHeight(), zombie.height);
+            if (zombie.y >= groundY) {
+                zombie.y = groundY;
+                zombie.velocityY = 0;
+            }
+        }
+
+        keepZombieOnGround(zombie) {
+            zombie.y = Utils.getGroundY(MobileDetector.getWorldHeight(), zombie.height);
+        }
+
+        checkZombiePlayerCollision(zombie) {
+            const player = this.game.player;
+            
+            if (!Utils.checkEntityCollision(player, zombie)) return;
+            
+            this.handleZombieTouchDamage(zombie);
+            this.applyCollisionSeparation(player, zombie);
+        }
+
+        handleZombieTouchDamage(zombie) {
+            const now = this.game.timeElapsed;
+            if (now - zombie.lastHitTime >= zombie.hitCooldown) {
+                this.game.applyDamage(zombie.touchDamage);
+                zombie.lastHitTime = now;
+            }
+            zombie.velocityX *= 0.1;
+        }
+
+        applyCollisionSeparation(player, zombie) {
+            if (player.x < zombie.x) {
+                const push = (player.x + player.width) - zombie.x;
+                player.x -= push * 0.2;
+                zombie.x += push * 0.2;
+            } else {
+                const push = (zombie.x + zombie.width) - player.x;
+                player.x += push * 0.2;
+                zombie.x -= push * 0.2;
+            }
+        }
+    }
+
+    // =====================================================
+    // ENTITY FACTORY
+    // =====================================================
+    class EntityFactory {
+        static createPlayer() {
+            return {
+                x: CONFIG.PLAYER_START_X,
+                y: 0,
+                width: CONFIG.PLAYER_WIDTH,
+                height: CONFIG.PLAYER_HEIGHT,
+                velocityX: 0,
+                velocityY: 0,
+                hp: CONFIG.PLAYER_MAX_HP,
+                maxHP: CONFIG.PLAYER_MAX_HP,
+                onGround: true,
+                facingRight: true
+            };
+        }
+
+        static createZombie(x, type) {
+            console.log(`EntityFactory.createZombie called: type=${type}, x=${x}`);
+            const template = ENEMY_TYPES[type];
+            if (!template) {
+                console.error(`No template found for zombie type: ${type}`);
+                console.log('Available types:', Object.keys(ENEMY_TYPES));
+                return null;
+            }
+            console.log(`Template found:`, template);
+
+            const zombie = {
+                x: x,
+                y: 0,
+                width: template.width,
+                height: template.height,
+                velocityX: 0,
+                velocityY: 0,
+                hp: template.maxHP,
+                maxHP: template.maxHP,
+                speed: template.speed,
+                touchDamage: template.touchDamage,
+                hitCooldown: template.hitCooldown,
+                lastHitTime: -999,
+                onGround: true,
+                facingRight: false,
+                spriteKey: template.spriteKey,
+                stuckTimer: 0
+            };
+
+            // Add type-specific properties
+            if (type === 'zombieSpitter') {
+                Object.assign(zombie, {
+                    attackRange: template.attackRange,
+                    attackCooldown: template.attackCooldown,
+                    lastAttackTime: -999,
+                    projectileSpeed: template.projectileSpeed,
+                    projectileDamage: template.projectileDamage
+                });
+            }
+
+            if (type === 'zombieTank') {
+                Object.assign(zombie, {
+                    shieldHP: template.shieldHP,
+                    maxShieldHP: template.maxShieldHP
+                });
+            }
+
+            console.log(`Zombie object created:`, zombie);
+            return zombie;
+        }
+    }
+
+    // =====================================================
+    // MAIN GAME CLASS
+    // =====================================================
+    class ZombieSurvivalGame {
+        constructor() {
+            this.canvas = document.getElementById('gameCanvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.ctx.imageSmoothingEnabled = false;
+            
+            this.initializeSystems();
+            this.initializeGameState();
+            this.setupCanvas();
+            this.initializeSprites();
+            
+            this.lastTime = 0;
+            this.deltaTime = 0;
+            this.timeElapsed = 0;
+            
+            // Use longer delay for mobile to ensure canvas dimensions are fully set
+            const setupDelay = MobileDetector.isMobile() ? CONFIG.INITIAL_SETUP_DELAY * 3 : CONFIG.INITIAL_SETUP_DELAY;
+            setTimeout(() => this.setupInitialPositions(), setupDelay);
+            setTimeout(() => this.hideLoadingScreen(), CONFIG.LOADING_HIDE_DELAY);
+            
+            // Mobile-specific initialization
+            if (MobileDetector.isMobile()) {
+                this.initializeMobileFeatures();
+                // Initialize mobile controls after all systems are ready
+                setTimeout(() => {
+                    this.inputManager.initializeMobileControls();
+                }, 100);
+            }
+        }
+
+        initializeSystems() {
+            this.audioManager = new AudioManager();
+            this.inputManager = new InputManager(this);
+            this.weaponSystem = new WeaponSystem(this);
+            this.shopSystem = new ShopSystem(this);
+            this.waveSystem = new WaveSystem(this);
+            this.effectsManager = new EffectsManager(this);
+            this.renderer = new Renderer(this);
+            this.physics = new PhysicsEngine(this);
+            
+            // Apply mobile optimizations if on mobile device
+            if (MobileDetector.isMobile()) {
+                this.renderer.optimizeCanvasForMobile();
+            }
+        }
+
+        initializeGameState() {
+            this.player = EntityFactory.createPlayer();
+            this.gameOver = false;
+            this.canRestart = false;
+            this.bullets = [];
+            this.zombies = [];
+            this.acidProjectiles = [];
+            this.acidPools = [];
+        }
+
+        initializeSprites() {
+            // Generate mirrored sprites
+            const spritesToFlip = ['player', 'zombie', 'zombieFat', 'zombieSpitter', 
+                                  'zombieTank', 'zombieTankUnshielded', 'zombieWorm', 'computer'];
+            
+            spritesToFlip.forEach(spriteName => {
+                if (SPRITES[spriteName] && SPRITES[spriteName].left) {
+                    SPRITES[spriteName].right = Utils.flipSprite(SPRITES[spriteName].left);
+                }
+            });
+        }
+
+        setupCanvas() {
+            // Set canvas internal rendering dimensions
+            if (MobileDetector.isMobile()) {
+                // For mobile, use screen dimensions
+                this.canvas.width = MobileDetector.getWorldWidth();
+                this.canvas.height = MobileDetector.getWorldHeight();
+                // Set CSS dimensions to match internal dimensions for mobile
+                this.canvas.style.width = `${this.canvas.width}px`;
+                this.canvas.style.height = `${this.canvas.height}px`;
+            } else {
+                // For desktop, use a reasonable high resolution that maintains pixel art quality
+                const pixelRatio = window.devicePixelRatio || 1;
+                
+                // Use 2x the world resolution for crisp rendering without over-scaling
+                this.canvas.width = CONFIG.WORLD_WIDTH * 2 * pixelRatio;
+                this.canvas.height = CONFIG.WORLD_HEIGHT * 2 * pixelRatio;
+                
+                // Scale context by 2x to maintain proper coordinate system
+                this.ctx.scale(2 * pixelRatio, 2 * pixelRatio);
+                
+                // CSS dimensions are already set to 100% in stylesheet for stretching
+            }
+            
+            console.log(`Canvas setup: ${this.canvas.width}x${this.canvas.height} (internal), CSS: ${this.canvas.style.width || '100%'} x ${this.canvas.style.height || '100%'}`)
+            
+            // Configure canvas for crisp rendering
+            this.ctx.imageSmoothingEnabled = false;
+            this.ctx.textRenderingOptimization = 'optimizeSpeed';
+            
+            // Handle window resizing for scaling only
+            this.handleWindowResize();
+            window.addEventListener('resize', () => {
+                if (MobileDetector.isMobile()) {
+                    // Update canvas dimensions for mobile when window resizes
+                    this.canvas.width = MobileDetector.getWorldWidth();
+                    this.canvas.height = MobileDetector.getWorldHeight();
+                    // Update CSS dimensions to match
+                    this.canvas.style.width = `${this.canvas.width}px`;
+                    this.canvas.style.height = `${this.canvas.height}px`;
+                    // Update rotation message visibility
+                    this.updateRotationMessageVisibility();
+                    // Reposition merchant for new screen dimensions
+                    this.repositionMerchantForMobile();
+                } else {
+                    // For desktop, update canvas resolution and context scaling
+                    this.setupCanvas();
+                }
+                this.handleWindowResize();
+            });
+            
+            // Handle orientation change on mobile
+            if (MobileDetector.isMobile()) {
+                window.addEventListener('orientationchange', () => {
+                    setTimeout(() => {
+                        // Update canvas dimensions for new orientation
+                        this.canvas.width = MobileDetector.getWorldWidth();
+                        this.canvas.height = MobileDetector.getWorldHeight();
+                        // Update CSS dimensions to match
+                        this.canvas.style.width = `${this.canvas.width}px`;
+                        this.canvas.style.height = `${this.canvas.height}px`;
+                        this.handleWindowResize();
+                        // Update rotation message visibility
+                        this.updateRotationMessageVisibility();
+                        // Reposition merchant for new orientation
+                        this.repositionMerchantForMobile();
+                    }, 200);
+                });
+            }
+        }
+
+        handleWindowResize() {
+            // Get current world dimensions based on device type
+            const worldWidth = MobileDetector.getWorldWidth();
+            const worldHeight = MobileDetector.getWorldHeight();
+            
+            // Calculate the scale to fit the world in the window
+            let padding = 0;
+            let availableWidth = window.innerWidth - (padding * 2);
+            let availableHeight = window.innerHeight - (padding * 2);
+            
+            // Mobile-specific adjustments
+            if (MobileDetector.isMobile()) {
+                // On mobile, we want to use more of the screen
+                availableWidth = window.innerWidth;
+                availableHeight = window.innerHeight;
+                
+                // In portrait mode, leave some space for UI elements
+                if (MobileDetector.isPortrait()) {
+                    availableHeight = window.innerHeight - 100; // Reserve space for controls
+                }
+            }
+            
+            const scaleX = availableWidth / worldWidth;
+            const scaleY = availableHeight / worldHeight;
+            let scale;
+            
+            if (MobileDetector.isMobile()) {
+                // On mobile, use 1:1 scaling for crisp graphics and no black bars
+                scale = 1.0;
+                
+                // Calculate position 
+                const scaledWidth = worldWidth * scale;
+                const scaledHeight = worldHeight * scale;
+                
+                // Center the canvas horizontally and vertically
+                const left = (window.innerWidth - scaledWidth) / 2;
+                const top = (window.innerHeight - scaledHeight) / 2;
+                
+                // Apply scaling and positioning for mobile
+                this.canvas.style.transform = `scale(${scale})`;
+                this.canvas.style.transformOrigin = 'top left';
+                this.canvas.style.position = 'fixed';
+                this.canvas.style.left = `${left}px`;
+                this.canvas.style.top = `${top}px`;
+            } else {
+                // Desktop: Let CSS handle the stretching to full screen
+                // Remove any transform/positioning that would interfere
+                this.canvas.style.transform = '';
+                this.canvas.style.transformOrigin = '';
+                this.canvas.style.position = '';
+                this.canvas.style.left = '';
+                this.canvas.style.top = '';
+                // For desktop with high-res canvas, mouse coordinates map directly to world coordinates
+                scale = 1.0; // Direct mapping since we scaled the context, not the canvas
+            }
+            
+            // Store the current scale for mouse input calculations
+            this.currentScale = scale;
+            
+            // Update mobile controls positioning if active
+            if (this.inputManager.mobileInput) {
+                this.updateMobileControlsPosition();
+            }
+            
+            // Debug logging (only when DEBUG_MODE is enabled)
+            if (CONFIG.DEBUG_MODE) {
+                console.log(`Window: ${window.innerWidth}x${window.innerHeight}, Scale: ${scale}, Scaled size: ${scaledWidth}x${scaledHeight}, Position: ${left},${top}`);
+            }
+        }
+        
+        updateMobileControlsPosition() {
+            if (!this.inputManager.mobileInput) return;
+            
+            const controls = document.getElementById('mobileControls');
+            const leftStick = document.getElementById('leftStick');
+            const mobileButtons = document.querySelector('.mobile-buttons');
+            
+            // Adjust positioning based on screen size and orientation
+            if (MobileDetector.isPortrait()) {
+                // Portrait mode - position controls for tall screen
+                leftStick.style.top = '50%';
+                leftStick.style.left = '20px';
+                leftStick.style.transform = 'translateY(-50%)';
+                mobileButtons.style.bottom = '170px';
+                mobileButtons.style.right = '10px';
+            } else {
+                // Landscape mode - position controls for wide screen
+                leftStick.style.top = '50%';
+                leftStick.style.left = '20px';
+                leftStick.style.transform = 'translateY(-50%)';
+                mobileButtons.style.bottom = '120px';
+                mobileButtons.style.right = '10px';
+            }
+        }
+        
+        initializeMobileFeatures() {
+            // Prevent zooming and bouncing on mobile
+            document.addEventListener('touchmove', (e) => {
+                if (e.target.closest('.mobile-controls')) {
+                    e.preventDefault();
+                }
+            }, { passive: false });
+            
+            // Add mobile-specific CSS classes
+            document.body.classList.add('mobile-device');
+            
+            // Initialize CSS custom properties for analog sticks
+            document.documentElement.style.setProperty('--stick-offset-x', '0px');
+            document.documentElement.style.setProperty('--stick-offset-y', '0px');
+            
+            // Update mobile controls position
+            this.updateMobileControlsPosition();
+            
+            // Handle rotation message visibility
+            this.updateRotationMessageVisibility();
+            
+            console.log('Mobile features initialized');
+        }
+        
+        updateRotationMessageVisibility() {
+            if (!MobileDetector.isMobile()) return;
+            
+            const rotationMessage = document.getElementById('rotationMessage');
+            if (!rotationMessage) return;
+            
+            if (MobileDetector.isPortrait()) {
+                rotationMessage.style.display = 'flex';
+            } else {
+                rotationMessage.style.display = 'none';
+            }
+        }
+
+        updatePositionsAfterResize() {
+            // This method is no longer needed since world size is fixed
+            // But we keep it for compatibility and future use if needed
+        }
+
+        repositionMerchantForMobile() {
+            if (!MobileDetector.isMobile()) return;
+            
+            // Recalculate merchant position for current screen dimensions
+            const worldWidth = MobileDetector.getWorldWidth();
+            const worldHeight = MobileDetector.getWorldHeight();
+            const groundY = Utils.getGroundY(worldHeight, this.shopSystem.merchant.height);
+            
+            const merchantX = Math.min(CONFIG.MERCHANT_X, worldWidth - this.shopSystem.merchant.width - 50);
+            this.shopSystem.merchant.x = Math.max(100, merchantX);
+            this.shopSystem.setMerchantPosition(groundY);
+        }
+
+        setupInitialPositions() {
+            // Use fixed world dimensions from CONFIG
+            this.player.x = Math.min(CONFIG.PLAYER_START_X, MobileDetector.getWorldWidth() - 200);
+            
+            const groundY = Utils.getGroundY(MobileDetector.getWorldHeight(), this.player.height);
+            this.player.y = groundY;
+            this.player.onGround = true;
+            this.player.velocityY = 0;
+            this.player.velocityX = 0;
+
+            this.inputManager.mouse.x = this.player.x + this.player.width / 2;
+            this.inputManager.mouse.y = this.player.y + this.player.height / 2;
+
+            // Position merchant safely within screen bounds for all devices
+            const worldWidth = MobileDetector.getWorldWidth();
+            const merchantX = Math.min(CONFIG.MERCHANT_X, worldWidth - this.shopSystem.merchant.width - 50);
+            this.shopSystem.merchant.x = Math.max(100, merchantX); // Ensure at least 100px from left edge
+            this.shopSystem.setMerchantPosition(groundY);
+            
+            
+            // Ensure canvas is properly scaled after positioning
+            this.handleWindowResize();
+        }
+
+        hideLoadingScreen() {
+            document.getElementById('loadingScreen').classList.add('hidden');
+        }
+
+        spawnZombie(x, type = 'zombie') {
+            console.log(`Attempting to spawn zombie: type=${type}, x=${x}`);
+            const zombie = EntityFactory.createZombie(x, type);
+            if (zombie) {
+                console.log(`Zombie created successfully:`, zombie);
+                zombie.y = Utils.getGroundY(MobileDetector.getWorldHeight(), zombie.height);
+                this.zombies.push(zombie);
+                console.log(`Zombie added to game. Total zombies: ${this.zombies.length}`);
+            } else {
+                console.error(`Failed to create zombie of type: ${type}`);
+            }
+        }
+
+        applyDamage(amount) {
+            if (this.gameOver) return;
+            
+            this.player.hp = Math.max(0, this.player.hp - Math.floor(amount));
+            this.effectsManager.addScreenShake(6);
+            
+            if (this.player.hp <= 0) {
+                this.triggerGameOver();
+            }
+        }
+
+        damageZombie(zombie, damage) {
+            // Handle Tank zombie shield
+            if (zombie.shieldHP !== undefined && zombie.shieldHP > 0) {
+                zombie.shieldHP = Math.max(0, zombie.shieldHP - damage);
+                
+                if (zombie.shieldHP <= 0) {
+                    this.effectsManager.createHitEffect(
+                        zombie.x + zombie.width / 2, 
+                        zombie.y + zombie.height / 2, 
+                        'shieldBreak'
+                    );
+                    zombie.spriteKey = 'zombieTankUnshielded';
+                }
+                return false;
+            }
+            
+            // Apply damage to health
+            zombie.hp = Math.max(0, zombie.hp - damage);
+            const zombieDied = zombie.hp <= 0;
+            
+            // If fat zombie dies, spawn 4 worm zombies
+            if (zombieDied && zombie.spriteKey === 'zombieFat') {
+                const zombieX = zombie.x + zombie.width / 2;
+                const zombieY = zombie.y;
+                
+                // Create fat explosion effect at fat zombie position
+                this.effectsManager.createHitEffect(zombieX, zombieY, 'fatExplosion');
+                
+                // Spawn 4 worm zombies dropping from above the fat zombie
+                const dropHeight = 60; // Height above the fat zombie to spawn worms
+                const spawnPositions = [
+                    { x: zombieX - 50, y: zombieY - dropHeight },      // Left, above
+                    { x: zombieX + 50, y: zombieY - dropHeight },      // Right, above  
+                    { x: zombieX - 25, y: zombieY - dropHeight - 10 }, // Up-left, higher
+                    { x: zombieX + 25, y: zombieY - dropHeight - 10 }  // Up-right, higher
+                ];
+                
+                for (let i = 0; i < 4; i++) {
+                    const pos = spawnPositions[i];
+                    // Ensure spawn position is within bounds
+                    const clampedX = Math.max(0, Math.min(pos.x, MobileDetector.getWorldWidth() - 20));
+                    
+                    // Create worm zombie manually to control its initial position
+                    const worm = EntityFactory.createZombie(clampedX, 'zombieWorm');
+                    if (worm) {
+                        worm.y = Math.max(0, pos.y); // Start above ground
+                        worm.velocityY = 0; // No initial downward velocity (gravity will take over)
+                        this.zombies.push(worm);
+                    }
+                }
+            }
+            
+            return zombieDied;
+        }
+
+        triggerGameOver() {
+            this.gameOver = true;
+            this.canRestart = false;
+            setTimeout(() => {
+                this.canRestart = true;
+            }, CONFIG.RESTART_DELAY);
+        }
+
+        restart() {
+            this.initializeGameState();
+            this.weaponSystem.inventory = this.weaponSystem.initializeInventory();
+            this.weaponSystem.currentSlot = 'main1';
+            this.waveSystem.reset();
+            this.shopSystem.closeShop();
+            
+            // Ensure all zombies are cleared and game is in peaceful mode
+            this.zombies = [];
+            this.bullets = [];
+            this.acidProjectiles = [];
+            this.acidPools = [];
+            
+            this.setupInitialPositions();
+            
+            // Ensure canvas is properly scaled after restart
+            this.handleWindowResize();
+        }
+
+        update(deltaTime) {
+            if (this.gameOver) return;
+
+            this.physics.update(deltaTime);
+            this.shopSystem.update();
+            this.weaponSystem.update();
+            this.weaponSystem.checkReloadProgress();
+            this.effectsManager.update(deltaTime);
+            this.waveSystem.checkWaveCompletion();
+        }
+
+        render() {
+            this.renderer.render(this.deltaTime);
+        }
+
+        start() {
+            this.lastTime = performance.now();
+            this.handleWindowResize(); // Ensure proper initial scaling
+            this.gameLoop(this.lastTime);
+        }
+
+        gameLoop(currentTime) {
+            this.deltaTime = Utils.clamp((currentTime - this.lastTime) / 1000, 0, 0.0167);
+            this.timeElapsed += this.deltaTime;
+            this.lastTime = currentTime;
+
+            this.update(this.deltaTime);
+            this.render();
+
+            requestAnimationFrame((time) => this.gameLoop(time));
+        }
+    }
+
+    // =====================================================
+    // INITIALIZATION
+    // =====================================================
+    window.addEventListener('DOMContentLoaded', () => {
+        const game = new ZombieSurvivalGame();
+        game.start();
+        
+        console.log(`%cZombie Survival Alpha v${CONFIG.GAME_VERSION}`, 'color: #7CFC00; font-size: 16px; font-weight: bold;');
+        console.log('%cControls: WASD to move, 1-2-3 to switch weapons, Mouse to aim/shoot, R to reload, E near computer to access terminal', 'color: #9cf;');
+    });
+    </script>
+</body>
+</html>
+</html>
