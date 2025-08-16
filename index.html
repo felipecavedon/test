@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
     <meta name="description" content="Zombie Survival - A pixel art action survival game">
     <meta name="author" content="Cavedon">
-    <title>Zombie Survival - Alpha v4.0</title>
+    <title>Zombie Survival - Alpha v3.0</title>
     <style>
         /* =====================================================
            RESET & BASE STYLES
@@ -108,17 +108,17 @@
         }
         
         .analog-stick.left {
-            top: 50%;
+            bottom: 30px;
             left: 30px;
-            transform: translateY(-50%);
         }
 
         .mobile-buttons {
             position: absolute;
             bottom: 170px;
-            right: 10px;
-            display: flex;
-            flex-direction: column;
+            right: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
             gap: 10px;
             pointer-events: auto;
         }
@@ -271,50 +271,12 @@
         }
 
         .shopItemsContainer {
-            display: table;
-            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
             margin: 20px 0;
-            border-collapse: collapse;
-        }
-
-        .shopTableRow {
-            display: table-row;
-        }
-
-        .shopTableHeader {
-            display: table-cell;
-            text-align: center;
-            padding: 15px;
-            background: rgba(0, 255, 0, 0.2);
-            border: 2px solid #00ff00;
-            font-weight: bold;
-            color: #fff;
-            font-size: 16px;
-            text-transform: uppercase;
-        }
-
-        .shopTableCell {
-            display: table-cell;
-            vertical-align: top;
-            padding: 10px;
-            border: 1px solid #00ff00;
-            width: 50%;
-        }
-
-        .shopTableHeader:first-child {
-            border-top-left-radius: 8px;
-        }
-
-        .shopTableHeader:last-child {
-            border-top-right-radius: 8px;
-        }
-
-        .shopTableCell:first-child {
-            border-bottom-left-radius: 8px;
-        }
-
-        .shopTableCell:last-child {
-            border-bottom-right-radius: 8px;
+            flex-wrap: wrap;
+            align-items: stretch;
         }
 
         .shopItem {
@@ -322,11 +284,15 @@
             border: 2px solid #00ff00;
             border-radius: 8px;
             padding: 15px;
-            margin: 8px 0;
+            margin: 10px 5px;
             cursor: pointer;
             transition: all 0.2s;
-            display: block;
-            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex: 1;
+            min-width: 180px;
+            max-width: 300px;
             user-select: none;
             -webkit-user-select: none;
             -moz-user-select: none;
@@ -364,44 +330,6 @@
         .shopItemStats {
             font-size: 12px;
             color: #ccc;
-        }
-
-        .slotSelectionButtons {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .slotButton {
-            background: rgba(0, 255, 0, 0.1);
-            border: 1px solid #00ff00;
-            border-radius: 4px;
-            color: #00ff00;
-            padding: 6px 12px;
-            cursor: pointer;
-            font-size: 11px;
-            font-weight: bold;
-            transition: all 0.2s;
-            font-family: "Courier New", monospace;
-        }
-
-        .slotButton:hover {
-            background: rgba(0, 255, 0, 0.2);
-            border-color: #00ff40;
-        }
-
-        .slotButton.equipped {
-            background: rgba(255, 255, 0, 0.2);
-            border-color: #ffff00;
-            color: #ffff00;
-        }
-
-        .slotButton.selected {
-            background: rgba(0, 255, 0, 0.3);
-            border-color: #00ff40;
-            box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
         }
 
         .shopControls {
@@ -566,28 +494,6 @@
                 min-height: 60px;
                 min-width: 140px;
             }
-
-            /* Mobile table layout adjustments */
-            .shopItemsContainer {
-                display: block;
-            }
-            
-            .shopTableRow {
-                display: block;
-                margin-bottom: 20px;
-            }
-            
-            .shopTableHeader,
-            .shopTableCell {
-                display: block;
-                width: 100%;
-                margin-bottom: 10px;
-            }
-            
-            .shopTableHeader {
-                text-align: center;
-                margin-bottom: 15px;
-            }
         }
         
         @media (max-width: 480px) {
@@ -720,9 +626,9 @@
     <div class="mobile-controls" id="mobileControls">
         <div class="analog-stick left" id="leftStick"></div>
         <div class="mobile-buttons">
-            <div class="mobile-button shop" id="shopButton">E</div>
-            <div class="mobile-button weapon" id="weaponButton">WEAPON</div>
             <div class="mobile-button reload" id="reloadButton">RELOAD</div>
+            <div class="mobile-button shop" id="shopButton">SHOP</div>
+            <div class="mobile-button weapon" id="weaponButton">WEAPON</div>
         </div>
     </div>
     
@@ -753,6 +659,7 @@
                 <div id="shopItems"></div>
             </div>
             <div class="shopControls">
+                <button id="buyButton" class="shopButton" disabled>SWAP WEAPON</button>
                 <button id="backToMenuButton" class="shopButton">BACK</button>
             </div>
         </div>
@@ -892,17 +799,20 @@
         },
         zombieFat: {
             left: [
-                "....OOOOOOOOOOOO....",
-                ".OOOggggggggggggOOO.",
-                ".OggggggggggggggggO.",
-                ".OggggggggggggggggO.",
-                ".OggggggggggggGGGGO.",
-                ".OggggggggGGGGGGGGO.",
-                ".OggggGGGGGGGGGGGGO.",
-                ".OggGGGGGGGGGGGGGGO.",
-                ".OgGGGGGGGGGGGGGGGO.",
-                ".OGGGGGGGGGGGGGGGGOO",
-                "..OOOOOOOOOOOOOOOOOO"
+                "...OOOOOOOOOO...",
+                ".OOgggggggggOO.",
+                ".OggggggggggggO",
+                ".OggggggggggggO",
+                ".OggggggggggggO",
+                ".OggggggggggGGO",
+                ".OggggggggGGGGO",
+                ".OggggggGGGGGGO",
+                ".OggggGGGGGGGGO",
+                ".OggGGGGGGGGGGO",
+                ".OgGGGGGGGGGGGO",
+                ".OGGGGGGGGGGGGO",
+                ".OGGGGGGGGGGGGO",
+                "..OOOOOOOOOOOOO"
             ],
             right: null
         },
@@ -966,17 +876,6 @@
 ],
             right: null
         },
-        zombieWorm: {
-            left: [
-                "..OOOOOOOOOO..",
-                ".OggggggggGO.",
-                "OggggggggggO.",
-                "OggGggggGggO.",
-                "OggggggggggO.",
-                ".OOOOOOOOOO.."
-            ],
-            right: null
-        },
         computer: {
             left: [
   "wwwwwwwwwwww",
@@ -1015,21 +914,8 @@
                 ".r.r.",
                 "r...r"
             ],
-            acid: ["..aa..",".aaaa.","aaaaa.","aaaaa.","..aa.."],
-            shieldBreak: [".w.","w.w",".w."],
-            fatExplosion: [
-                "..r.....r..........r",
-                ".rr..r....rr.....r..",
-                "..rrrr..rrrrrr..rr..",
-                ".rrrrrrrrrrrrrrrrr..",
-                "rrrrrrrrrrrrrrrrrrrr",
-                "rrrrrrrrrrrrrrrrrr..",
-                "rrrrrrrrrrrrrrrrr...",
-                ".rrrrrrrrrrrrrr.....",
-                "..rrrrrrrrrrr.......",
-                "...rrrr..rrr..r.....",
-                ".r..r....r.........."
-            ]
+            acid: [".a.","a.a",".a."],
+            shieldBreak: [".w.","w.w",".w."]   
         }
     };
 
@@ -1069,7 +955,7 @@
         rifle: {
             id: 'rifle_mk1',
             name: 'Assault Rifle',
-            type: 'main',
+            type: 'primary',
             damage: 7,
             fireRate: 10,
             bulletSpeed: 1100,
@@ -1085,7 +971,7 @@
         pistol: {
             id: 'pistol_basic',
             name: 'Pistol',
-            type: 'side',
+            type: 'secondary',
             damage: 5,
             fireRate: 4,
             bulletSpeed: 900,
@@ -1101,7 +987,7 @@
         knife: {
             id: 'knife_mk1',
             name: 'Combat Knife',
-            type: 'side',
+            type: 'melee',
             damage: 15,
             range: 32,
             cooldown: 0.38,
@@ -1112,7 +998,7 @@
         shotgun: {
             id: 'shotgun_basic',
             name: 'Shotgun',
-            type: 'main',
+            type: 'primary',
             damage: 36,
             fireRate: 1.5,
             bulletSpeed: 700,
@@ -1130,7 +1016,7 @@
         smg: {
             id: 'smg_basic',
             name: 'SMG',
-            type: 'side',
+            type: 'primary',
             damage: 4,
             fireRate: 15,
             bulletSpeed: 950,
@@ -1146,7 +1032,7 @@
         sniper: {
             id: 'sniper_basic',
             name: 'Sniper Rifle',
-            type: 'main',
+            type: 'primary',
             damage: 50,
             fireRate: 1,
             bulletSpeed: 2500,
@@ -1162,7 +1048,7 @@
         minigun: {
             id: 'minigun_basic',
             name: 'Minigun',
-            type: 'main',
+            type: 'primary',
             damage: 6,
             fireRate: 20,
             bulletSpeed: 1000,
@@ -1181,7 +1067,7 @@
         shotgun: {
             id: 'shotgun_basic',
             name: 'Shotgun',
-            type: 'main',
+            type: 'primary',
             price: 0,
             weapon: { ...WEAPONS.shotgun },
             stats: `DMG: ${WEAPONS.shotgun.damage} | RATE: ${WEAPONS.shotgun.fireRate}/s | RANGE: ${WEAPONS.shotgun.effectiveRange}`
@@ -1189,7 +1075,7 @@
         assaultRifle: {
             id: 'rifle_mk1',
             name: 'Assault Rifle',
-            type: 'main',
+            type: 'primary',
             price: 0,
             weapon: { ...WEAPONS.rifle },
             stats: `DMG: ${WEAPONS.rifle.damage} | RATE: ${WEAPONS.rifle.fireRate}/s | RANGE: ${WEAPONS.rifle.effectiveRange}`
@@ -1197,7 +1083,7 @@
         smg: {
             id: 'smg_basic',
             name: 'SMG',
-            type: 'side',
+            type: 'primary',
             price: 0,
             weapon: { ...WEAPONS.smg },
             stats: `DMG: ${WEAPONS.smg.damage} | RATE: ${WEAPONS.smg.fireRate}/s | RANGE: ${WEAPONS.smg.effectiveRange}`
@@ -1205,7 +1091,7 @@
         sniper: {
             id: 'sniper_basic',
             name: 'Sniper Rifle',
-            type: 'main',
+            type: 'primary',
             price: 0,
             weapon: { ...WEAPONS.sniper },
             stats: `DMG: ${WEAPONS.sniper.damage} | RATE: ${WEAPONS.sniper.fireRate}/s | RANGE: ${WEAPONS.sniper.effectiveRange}`
@@ -1213,26 +1099,10 @@
         minigun: {
             id: 'minigun_basic',
             name: 'Minigun',
-            type: 'main',
+            type: 'primary',
             price: 0,
             weapon: { ...WEAPONS.minigun },
             stats: `DMG: ${WEAPONS.minigun.damage} | RATE: ${WEAPONS.minigun.fireRate}/s | RANGE: ${WEAPONS.minigun.effectiveRange}`
-        },
-        pistol: {
-            id: 'pistol_basic',
-            name: 'Pistol',
-            type: 'side',
-            price: 0,
-            weapon: { ...WEAPONS.pistol },
-            stats: `DMG: ${WEAPONS.pistol.damage} | RATE: ${WEAPONS.pistol.fireRate}/s | RANGE: ${WEAPONS.pistol.effectiveRange}`
-        },
-        knife: {
-            id: 'knife_mk1',
-            name: 'Combat Knife',
-            type: 'side',
-            price: 0,
-            weapon: { ...WEAPONS.knife },
-            stats: `DMG: ${WEAPONS.knife.damage} | RATE: ${WEAPONS.knife.fireRate}/s | RANGE: ${WEAPONS.knife.effectiveRange}`
         }
     };
 
@@ -1247,8 +1117,8 @@
             spriteKey: 'zombie'
         },
         zombieFat: {
-            width: 50, // Wider to match the fatter sprite
-            height: 44, // Shorter to match the reduced sprite height
+            width: 42,
+            height: 56,
             speed: 35,
             touchDamage: 15,
             hitCooldown: 0.8,
@@ -1265,7 +1135,7 @@
             spriteKey: 'zombieSpitter',
             attackRange: 200,
             attackCooldown: 2.0,
-            projectileSpeed: 420,
+            projectileSpeed: 120,
             projectileDamage: 12
         },
         zombieTank: {
@@ -1278,15 +1148,6 @@
             shieldHP: 200,
             maxShieldHP: 200,
             spriteKey: 'zombieTank'
-        },
-        zombieWorm: {
-            width: 20,
-            height: 12,
-            speed: 120, // Very fast
-            touchDamage: 5,
-            hitCooldown: 0.3,
-            maxHP: 15, // Low health
-            spriteKey: 'zombieWorm'
         }
     };
 
@@ -1402,18 +1263,10 @@
         constructor() {
             this.audioContext = null;
             this.soundConfigs = {
-                // Weapon-specific sounds with different frequencies
-                pistol: { duration: 0.08, decay: 40, gain: 0.3, frequency: 800 },
-                rifle: { duration: 0.1, decay: 35, gain: 0.4, frequency: 600 },
-                shotgun: { duration: 0.12, decay: 30, gain: 0.5, frequency: 400 },
-                smg: { duration: 0.06, decay: 45, gain: 0.35, frequency: 700 },
-                sniper: { duration: 0.15, decay: 25, gain: 3.0, frequency: 200 },
-                minigun: { duration: 0.05, decay: 50, gain: 0.25, frequency: 650 },
-                melee: { duration: 0.12, decay: 25, gain: 0.4, frequency: 1200 },
-                empty: { duration: 0.06, decay: 150, gain: 0.3, frequency: 1500 },
-                // Satisfying hit sounds for player feedback
-                bodyHit: { duration: 0.08, decay: 30, gain: 0.4, frequency: 600, harmonics: [800, 1200] },
-                headshot: { duration: 0.12, decay: 20, gain: 0.6, frequency: 800, harmonics: [1200, 1600, 2400] }
+                shot: { duration: 0.08, decay: 40, gain: 0.3 },
+                melee: { duration: 0.12, decay: 25, gain: 0.4 },
+                shotgun: { duration: 0.12, decay: 30, gain: 0.5 },
+                empty: { duration: 0.06, decay: 150, gain: 0.3 }
             };
         }
 
@@ -1434,27 +1287,13 @@
 
             if (type === 'empty') {
                 this.playEmptyClick(config);
-            } else if (type === 'melee') {
-                this.playMeleeSound(config);
-            } else if (type === 'bodyHit' || type === 'headshot') {
-                this.playHitSound(config);
             } else {
-                this.playWeaponSound(config);
+                this.playNoiseSound(config);
             }
         }
 
-        playWeaponSound(config) {
-            const buffer = this.createWeaponBuffer(config.duration, config.decay, config.frequency);
-            this.playBuffer(buffer, config.gain);
-        }
-
-        playMeleeSound(config) {
-            const buffer = this.createMeleeBuffer(config.duration, config.decay, config.frequency);
-            this.playBuffer(buffer, config.gain);
-        }
-
-        playHitSound(config) {
-            const buffer = this.createHitBuffer(config.duration, config.decay, config.frequency, config.harmonics);
+        playNoiseSound(config) {
+            const buffer = this.createNoiseBuffer(config.duration, config.decay);
             this.playBuffer(buffer, config.gain);
         }
 
@@ -1463,7 +1302,7 @@
             this.playBuffer(buffer, config.gain);
         }
 
-        createWeaponBuffer(duration, decay, frequency) {
+        createNoiseBuffer(duration, decay) {
             const sampleRate = this.audioContext.sampleRate;
             const samples = Math.floor(sampleRate * duration);
             const buffer = this.audioContext.createBuffer(1, samples, sampleRate);
@@ -1471,75 +1310,10 @@
 
             for (let i = 0; i < samples; i++) {
                 const t = i / sampleRate;
-                const amplitude = Math.exp(-decay * t);
-                
-                // Mix filtered noise with a sine wave component for frequency character
-                const noise = (Math.random() * 2 - 1) * 0.7;
-                const tone = Math.sin(2 * Math.PI * frequency * t) * 0.3;
-                const freqNoise = this.bandpassNoise(noise, frequency, sampleRate);
-                
-                data[i] = (freqNoise + tone) * amplitude;
+                data[i] = (Math.random() * 2 - 1) * Math.exp(-decay * t);
             }
+
             return buffer;
-        }
-
-        createMeleeBuffer(duration, decay, frequency) {
-            const sampleRate = this.audioContext.sampleRate;
-            const samples = Math.floor(sampleRate * duration);
-            const buffer = this.audioContext.createBuffer(1, samples, sampleRate);
-            const data = buffer.getChannelData(0);
-
-            for (let i = 0; i < samples; i++) {
-                const t = i / sampleRate;
-                const amplitude = Math.exp(-decay * t);
-                
-                // Sharp attack for melee with high frequency emphasis
-                const attackDecay = Math.exp(-t * 80);
-                const noise = (Math.random() * 2 - 1);
-                const highFreq = Math.sin(2 * Math.PI * frequency * t * (1 + t * 3));
-                
-                data[i] = (noise * 0.6 + highFreq * 0.4) * amplitude * attackDecay;
-            }
-            return buffer;
-        }
-
-        createHitBuffer(duration, decay, frequency, harmonics) {
-            const sampleRate = this.audioContext.sampleRate;
-            const samples = Math.floor(sampleRate * duration);
-            const buffer = this.audioContext.createBuffer(1, samples, sampleRate);
-            const data = buffer.getChannelData(0);
-
-            for (let i = 0; i < samples; i++) {
-                const t = i / sampleRate;
-                const amplitude = Math.exp(-decay * t);
-                
-                // Create pleasant harmonic tones for satisfying hit feedback
-                let signal = 0;
-                
-                // Main frequency component
-                signal += Math.sin(2 * Math.PI * frequency * t) * 0.5;
-                
-                // Add harmonics for richness and satisfaction
-                if (harmonics) {
-                    harmonics.forEach((harmFreq, index) => {
-                        const harmAmp = 0.3 / (index + 1); // Decreasing amplitude for higher harmonics
-                        signal += Math.sin(2 * Math.PI * harmFreq * t) * harmAmp;
-                    });
-                }
-                
-                // Add a touch of brightness with filtered noise
-                const brightness = (Math.random() * 2 - 1) * 0.1 * Math.exp(-t * 20);
-                
-                data[i] = (signal + brightness) * amplitude;
-            }
-            return buffer;
-        }
-
-        bandpassNoise(noise, centerFreq, sampleRate) {
-            // Simple bandpass filter approximation for frequency-colored noise
-            const normalized = centerFreq / (sampleRate / 2);
-            const factor = Math.max(0.1, Math.min(1.0, normalized));
-            return noise * factor;
         }
 
         createClickBuffer(duration, decay) {
@@ -1640,7 +1414,7 @@
             const currentSlot = weaponSystem.currentSlot;
             
             // Define the order to cycle through weapons
-            const weaponOrder = ['main1', 'main2', 'side'];
+            const weaponOrder = ['primary', 'secondary', 'melee'];
             const currentIndex = weaponOrder.indexOf(currentSlot);
             const nextIndex = (currentIndex + 1) % weaponOrder.length;
             const nextSlot = weaponOrder[nextIndex];
@@ -1868,9 +1642,9 @@
 
             const keyActions = {
                 'w': () => this.handleJump(),
-                '1': () => this.game.weaponSystem.switchSlot('main1'),
-                '2': () => this.game.weaponSystem.switchSlot('main2'),
-                '3': () => this.game.weaponSystem.switchSlot('side'),
+                '1': () => this.game.weaponSystem.switchSlot('primary'),
+                '2': () => this.game.weaponSystem.switchSlot('secondary'),
+                '3': () => this.game.weaponSystem.switchSlot('melee'),
                 'r': () => this.handleReload(),
                 'e': () => this.game.shopSystem.tryOpenShop(),
                 ' ': () => this.handleRestart()
@@ -2068,15 +1842,15 @@
     class WeaponSystem {
         constructor(game) {
             this.game = game;
-            this.currentSlot = 'main';
+            this.currentSlot = 'primary';
             this.inventory = this.initializeInventory();
         }
 
         initializeInventory() {
             return {
-                main1: this.createWeaponInstance(WEAPONS.rifle),
-                main2: this.createWeaponInstance(WEAPONS.sniper),
-                side: this.createWeaponInstance(WEAPONS.pistol)
+                primary: this.createWeaponInstance(WEAPONS.rifle),
+                secondary: this.createWeaponInstance(WEAPONS.pistol),
+                melee: this.createWeaponInstance(WEAPONS.knife)
             };
         }
 
@@ -2110,21 +1884,7 @@
         }
 
         getCurrentWeapon() {
-            // Safety check to ensure inventory is initialized
-            if (!this.inventory || Object.keys(this.inventory).length === 0) {
-                return null;
-            }
-            
-            const weapon = this.inventory[this.currentSlot];
-            if (!weapon) {
-                // Fallback to first available slot without console warning
-                const firstSlot = Object.keys(this.inventory)[0];
-                if (firstSlot) {
-                    this.currentSlot = firstSlot;
-                    return this.inventory[firstSlot];
-                }
-            }
-            return weapon;
+            return this.inventory[this.currentSlot];
         }
 
         update() {
@@ -2134,9 +1894,7 @@
             if (!isShooting) return;
 
             const weapon = this.getCurrentWeapon();
-            if (!weapon) return; // Safety check to prevent errors
-            
-            if (weapon.id === 'knife_mk1' || weapon.range) {
+            if (weapon.type === 'melee') {
                 this.tryMeleeAttack(weapon);
             } else {
                 this.tryFireWeapon(weapon);
@@ -2155,19 +1913,16 @@
         }
 
         canFire(weapon) {
-            if (!weapon) return false; // Safety check
             const now = this.game.timeElapsed;
             const cooldown = 1 / weapon.fireRate;
             return now - weapon.lastShot >= cooldown && !weapon.isReloading;
         }
 
         isOutOfAmmo(weapon) {
-            if (!weapon) return true; // Safety check
             return weapon.ammo && weapon.ammo.current <= 0;
         }
 
         handleEmptyWeapon(weapon) {
-            if (!weapon) return; // Safety check
             if (!weapon.emptyClickPlayed && !weapon.wasFiring) {
                 this.game.audioManager.playSound('empty');
                 weapon.emptyClickPlayed = true;
@@ -2192,30 +1947,7 @@
             this.createMuzzleFlash(gunPos, direction, weapon);
             this.consumeAmmo(weapon);
             
-            // Map weapon ID to sound type
-            let soundType;
-            switch(weapon.id) {
-                case 'pistol_basic':
-                    soundType = 'pistol';
-                    break;
-                case 'rifle_mk1':
-                    soundType = 'rifle';
-                    break;
-                case 'shotgun_basic':
-                    soundType = 'shotgun';
-                    break;
-                case 'smg_basic':
-                    soundType = 'smg';
-                    break;
-                case 'sniper_basic':
-                    soundType = 'sniper';
-                    break;
-                case 'minigun_basic':
-                    soundType = 'minigun';
-                    break;
-                default:
-                    soundType = 'pistol'; // fallback
-            }
+            const soundType = weapon.id === 'shotgun_basic' ? 'shotgun' : 'shot';
             this.game.audioManager.playSound(soundType);
         }
 
@@ -2336,9 +2068,6 @@
                     const zombieDied = this.game.damageZombie(zombie, weapon.damage);
                     hitAny = true;
                     
-                    // Play satisfying hit sound for melee
-                    this.game.audioManager.playSound('bodyHit');
-                    
                     if (zombieDied) {
                         zombies.splice(i, 1);
                     }
@@ -2364,8 +2093,7 @@
 
         canReload(weapon) {
             return weapon && 
-                   weapon.id !== 'knife_mk1' && 
-                   !weapon.range &&
+                   weapon.type !== 'melee' && 
                    weapon.ammo && 
                    weapon.ammo.current < weapon.ammo.max && 
                    !weapon.isReloading;
@@ -2398,19 +2126,6 @@
                 weapon.wasFiring = false;
             });
         }
-
-        reloadAllWeapons() {
-            Object.values(this.inventory).forEach(weapon => {
-                // Only reload weapons that have ammo (not melee weapons like knife)
-                if (weapon.ammo && weapon.ammo.max !== Infinity) {
-                    weapon.ammo.current = weapon.ammo.max;
-                    weapon.isReloading = false;
-                    weapon.reloadStartTime = null;
-                    weapon.reloadEndTime = null;
-                }
-            });
-            console.log('All weapons reloaded to full ammo!');
-        }
     }
 
     // =====================================================
@@ -2421,7 +2136,6 @@
             this.game = game;
             this.shopOpen = false;
             this.selectedShopItem = null;
-            this.selectedSlot = null;
             this.merchant = this.createMerchant();
             this.initializeUI();
         }
@@ -2443,6 +2157,7 @@
             document.getElementById('weaponShopOption').addEventListener('click', () => this.openWeaponShop());
             
             // Weapon shop controls
+            document.getElementById('buyButton').addEventListener('click', () => this.buySelectedItem());
             document.getElementById('backToMenuButton').addEventListener('click', () => this.showMainMenu());
             
             // Close button
@@ -2479,6 +2194,7 @@
 
         openShop() {
             this.shopOpen = true;
+            this.selectedShopItem = null;
             this.showMainMenu();
             document.getElementById('shopInterface').style.display = 'block';
         }
@@ -2511,6 +2227,7 @@
 
         closeShop() {
             this.shopOpen = false;
+            this.selectedShopItem = null;
             document.getElementById('shopInterface').style.display = 'none';
         }
 
@@ -2518,55 +2235,11 @@
             const container = document.getElementById('shopItems');
             container.innerHTML = '';
             
-            // Create table structure
-            const table = document.createElement('div');
-            table.className = 'shopItemsContainer';
-            
-            // Row 1: Headers
-            const headerRow = document.createElement('div');
-            headerRow.className = 'shopTableRow';
-            
-            const mainHeader = document.createElement('div');
-            mainHeader.className = 'shopTableHeader';
-            mainHeader.textContent = 'Main';
-            
-            const sideHeader = document.createElement('div');
-            sideHeader.className = 'shopTableHeader';
-            sideHeader.textContent = 'Side';
-            
-            headerRow.appendChild(mainHeader);
-            headerRow.appendChild(sideHeader);
-            table.appendChild(headerRow);
-            
-            // Row 2: Weapons
-            const weaponsRow = document.createElement('div');
-            weaponsRow.className = 'shopTableRow';
-            
-            const mainCell = document.createElement('div');
-            mainCell.className = 'shopTableCell';
-            
-            const sideCell = document.createElement('div');
-            sideCell.className = 'shopTableCell';
-            
-            // Add main weapons to main cell
             Object.values(SHOP_ITEMS).forEach(item => {
-                if (item.type === 'main') {
-                    mainCell.appendChild(this.createShopItemElement(item));
-                }
+                container.appendChild(this.createShopItemElement(item));
             });
             
-            // Add side weapons to side cell
-            Object.values(SHOP_ITEMS).forEach(item => {
-                if (item.type === 'side') {
-                    sideCell.appendChild(this.createShopItemElement(item));
-                }
-            });
-            
-            weaponsRow.appendChild(mainCell);
-            weaponsRow.appendChild(sideCell);
-            table.appendChild(weaponsRow);
-            
-            container.appendChild(table);
+            document.getElementById('buyButton').disabled = true;
         }
 
         createShopItemElement(item) {
@@ -2574,56 +2247,18 @@
             element.className = 'shopItem';
             element.dataset.itemId = item.id;
             
-            const weaponType = item.weapon.type;
-            const isMainWeapon = weaponType === 'main';
-            
-            let slotButtonsHtml = '';
-            let isAnySlotEquipped = false;
-            
-            if (isMainWeapon) {
-                // For main weapons, show slot selection buttons
-                const main1Equipped = this.game.weaponSystem.inventory.main1?.id === item.id;
-                const main2Equipped = this.game.weaponSystem.inventory.main2?.id === item.id;
-                isAnySlotEquipped = main1Equipped || main2Equipped;
-                
-                slotButtonsHtml = `
-                    <div class="slotSelectionButtons">
-                        <button class="slotButton ${main1Equipped ? 'equipped' : ''}" data-slot="main1">
-                            SLOT 1 ${main1Equipped ? '(EQUIPPED)' : ''}
-                        </button>
-                        <button class="slotButton ${main2Equipped ? 'equipped' : ''}" data-slot="main2">
-                            SLOT 2 ${main2Equipped ? '(EQUIPPED)' : ''}
-                        </button>
-                    </div>
-                `;
-            } else {
-                // For side weapons, check if equipped normally
-                isAnySlotEquipped = this.game.weaponSystem.inventory[weaponType]?.id === item.id;
-            }
+            const isEquipped = this.game.weaponSystem.inventory.primary.id === item.id;
             
             element.innerHTML = `
                 <div class="shopItemInfo">
-                    <div class="shopItemName">${item.name}${isAnySlotEquipped ? ' (EQUIPPED)' : ''}</div>
+                    <div class="shopItemName">${item.name}${isEquipped ? ' (EQUIPPED)' : ''}</div>
                     <div class="shopItemStats">${item.stats}</div>
-                    ${slotButtonsHtml}
                 </div>
             `;
             
-            if (isAnySlotEquipped) {
+            if (isEquipped) {
                 element.setAttribute('disabled', 'true');
-            } else if (isMainWeapon) {
-                // For main weapons, add click handlers to slot buttons
-                element.querySelectorAll('.slotButton').forEach(button => {
-                    if (!button.classList.contains('equipped')) {
-                        button.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const targetSlot = button.getAttribute('data-slot');
-                            this.selectShopItemWithSlot(item, targetSlot);
-                        });
-                    }
-                });
             } else {
-                // For side weapons, use old behavior
                 element.addEventListener('click', () => this.selectShopItem(item));
             }
             
@@ -2631,30 +2266,24 @@
         }
 
         selectShopItem(item) {
-            // Automatically swap the side weapon
-            const weapon = item.weapon;
-            const targetSlot = item.weapon.type; // Default to weapon's natural slot
+            this.selectedShopItem = item;
             
-            this.game.weaponSystem.inventory[targetSlot] = 
-                this.game.weaponSystem.createWeaponInstance(weapon);
-            this.game.weaponSystem.currentSlot = targetSlot;
+            document.querySelectorAll('.shopItem').forEach(el => {
+                el.classList.remove('selected');
+            });
             
-            // Refresh the shop display to show updated equipped status
-            this.updateShopInterface();
+            document.querySelector(`[data-item-id="${item.id}"]`)?.classList.add('selected');
+            document.getElementById('buyButton').disabled = false;
         }
 
-        selectShopItemWithSlot(item, targetSlot) {
-            // Automatically swap the weapon
-            const weapon = item.weapon;
-            this.game.weaponSystem.inventory[targetSlot] = 
-                this.game.weaponSystem.createWeaponInstance(weapon);
-            this.game.weaponSystem.currentSlot = targetSlot;
+        buySelectedItem() {
+            if (!this.selectedShopItem) return;
             
-            // Refresh the shop display to show updated equipped status
-            this.updateShopInterface();
+            this.game.weaponSystem.inventory.primary = 
+                this.game.weaponSystem.createWeaponInstance(this.selectedShopItem.weapon);
+            this.game.weaponSystem.currentSlot = 'primary';
+            this.closeShop();
         }
-
-
 
         setMerchantPosition(y) {
             this.merchant.y = y;
@@ -2714,7 +2343,9 @@
         }
 
         spawnWave(waveNumber) {
+            console.log(`Spawning wave ${waveNumber}`);
             const zombieCount = this.calculateZombieCount(waveNumber);
+            console.log(`Zombie count: ${zombieCount}`);
             
             this.game.effectsManager.showWaveAnnouncement(waveNumber);
             this.isSpawningWave = true;
@@ -2812,9 +2443,6 @@
             this.gameStage = 'peaceful';
             this.isSpawningWave = false;
             this.clearAllTimers();
-            
-            // Reload all weapons instantly when wave completes
-            this.game.weaponSystem.reloadAllWeapons();
             
             // Show wave completion message
             console.log(`Wave ${this.currentWave - 1} completed! Return to computer to start Wave ${this.currentWave}`);
@@ -2943,127 +2571,14 @@
             this.ctx = game.ctx;
             this.clouds = Utils.shuffleArray([...CLOUD_SPRITES]);
             this.cloudOffset = 0;
-            
-            // Sprite caching system for mobile performance
-            this.spriteCache = new Map();
-            this.tempCanvas = document.createElement('canvas');
-            this.tempCtx = this.tempCanvas.getContext('2d');
-            
-            // Mobile performance tracking
-            this.frameCount = 0;
-            this.isMobile = MobileDetector.isMobile();
         }
 
-        // Sprite caching methods for performance optimization
-        getCachedSprite(sprite, width, height) {
-            if (!sprite || !Array.isArray(sprite) || sprite.length === 0) return null;
-            
-            const cacheKey = `${JSON.stringify(sprite)}_${width}_${height}`;
-            
-            if (this.spriteCache.has(cacheKey)) {
-                return this.spriteCache.get(cacheKey);
-            }
-            
-            // Create cached sprite
-            const cachedSprite = this.createCachedSprite(sprite, width, height);
-            this.spriteCache.set(cacheKey, cachedSprite);
-            
-            // Limit cache size to prevent memory issues
-            if (this.spriteCache.size > 100) {
-                const firstKey = this.spriteCache.keys().next().value;
-                this.spriteCache.delete(firstKey);
-            }
-            
-            return cachedSprite;
-        }
-
-        createCachedSprite(sprite, width, height) {
-            const { scaleX, scaleY, actualWidth, actualHeight } = this.getSpriteDrawParams(sprite, 0, 0, width, height);
-            const cellWidth = Math.max(1, scaleX);
-            const cellHeight = Math.max(1, scaleY);
-            
-            // Set up temporary canvas
-            this.tempCanvas.width = actualWidth * cellWidth;
-            this.tempCanvas.height = actualHeight * cellHeight;
-            this.tempCtx.clearRect(0, 0, this.tempCanvas.width, this.tempCanvas.height);
-            
-            // Pre-render the sprite to the temporary canvas
-            for (let row = 0; row < sprite.length; row++) {
-                const line = sprite[row];
-                if (!line || typeof line !== 'string') continue;
-                
-                for (let col = 0; col < line.length; col++) {
-                    const char = line[col];
-                    if (char === '.') continue;
-                    
-                    const colorKey = SPRITE_COLOR_MAP[char];
-                    if (!colorKey) continue;
-                    
-                    this.tempCtx.fillStyle = PALETTE[colorKey];
-                    this.tempCtx.fillRect(
-                        col * cellWidth,
-                        row * cellHeight,
-                        cellWidth,
-                        cellHeight
-                    );
-                }
-            }
-            
-            // Create and return the cached image data
-            const cachedCanvas = document.createElement('canvas');
-            cachedCanvas.width = this.tempCanvas.width;
-            cachedCanvas.height = this.tempCanvas.height;
-            const cachedCtx = cachedCanvas.getContext('2d');
-            cachedCtx.drawImage(this.tempCanvas, 0, 0);
-            
-            return {
-                canvas: cachedCanvas,
-                width: cachedCanvas.width,
-                height: cachedCanvas.height
-            };
-        }
-
-        // Mobile-specific performance optimizations
-        optimizeCanvasForMobile() {
-            // Disable image smoothing for pixel art (better performance)
-            this.ctx.imageSmoothingEnabled = false;
-            if (this.ctx.webkitImageSmoothingEnabled !== undefined) {
-                this.ctx.webkitImageSmoothingEnabled = false;
-            }
-            if (this.ctx.mozImageSmoothingEnabled !== undefined) {
-                this.ctx.mozImageSmoothingEnabled = false;
-            }
-            if (this.ctx.msImageSmoothingEnabled !== undefined) {
-                this.ctx.msImageSmoothingEnabled = false;
-            }
-        }
-
-        // Batch similar rendering operations to reduce state changes
-        batchFillRects(rects, fillStyle) {
-            if (rects.length === 0) return;
-            
-            this.ctx.fillStyle = fillStyle;
-            rects.forEach(rect => {
-                this.ctx.fillRect(rect.x, rect.y, rect.width, rect.height);
-            });
-        }
-
-        render(deltaTime = 0) {
-            this.frameCount++;
+        render() {
             this.clearScreen();
             const shake = this.game.effectsManager.getScreenShake();
 
-            // On mobile, render background clouds less frequently for better performance
-            if (!this.isMobile || this.frameCount % 2 === 0) {
-                this.renderBackground(deltaTime);
-            } else {
-                // Just render the black background without clouds
-                this.ctx.fillStyle = PALETTE.black;
-                this.ctx.fillRect(0, 0, MobileDetector.getWorldWidth(), MobileDetector.getWorldHeight());
-            }
-            
+            this.renderBackground();
             this.renderGround();
-            this.renderAcidPools(); // Render acid pools behind entities
             this.renderEntities(shake);
             this.renderProjectiles();
             this.renderEffects(shake);
@@ -3078,18 +2593,17 @@
             this.ctx.clearRect(0, 0, MobileDetector.getWorldWidth(), MobileDetector.getWorldHeight());
         }
 
-        renderBackground(deltaTime = 0) {
+        renderBackground() {
             this.ctx.fillStyle = PALETTE.black;
             this.ctx.fillRect(0, 0, MobileDetector.getWorldWidth(), MobileDetector.getWorldHeight());
-            this.renderClouds(deltaTime);
+            this.renderClouds();
         }
 
-        renderClouds(deltaTime = 0) {
+        renderClouds() {
             const worldHeight = MobileDetector.getWorldHeight();
             const worldWidth = MobileDetector.getWorldWidth();
             const baseY = worldHeight * 0.25;
-            // Use delta time for frame-rate independent cloud movement
-            this.cloudOffset += CONFIG.CLOUD_SPEED * deltaTime * 60; // Multiply by 60 to maintain similar speed as before
+            this.cloudOffset += CONFIG.CLOUD_SPEED;
             
             let cloudsVisible = 0;
             
@@ -3152,8 +2666,8 @@
         }
 
         renderEntities(shake) {
-            this.renderMerchant();
             this.renderPlayer(shake);
+            this.renderMerchant();
             this.renderWeapon(shake);
             this.renderZombies();
         }
@@ -3168,54 +2682,6 @@
                 player.width,
                 player.height
             );
-            
-            // Render reload bar above player head
-            this.renderPlayerReloadBar(player, shake);
-        }
-
-        renderPlayerReloadBar(player, shake) {
-            const weaponSystem = this.game.weaponSystem;
-            const currentWeapon = weaponSystem.getCurrentWeapon();
-            
-            if (!currentWeapon || currentWeapon.id === 'knife_mk1' || currentWeapon.range || !currentWeapon.isReloading) {
-                return;
-            }
-            
-            this.ctx.save();
-            
-            // Position above player's head
-            const centerX = Math.floor(player.x + player.width / 2 + shake.x);
-            const barY = Math.floor(player.y - 15 + shake.y); // 15 pixels above player
-            
-            // Reloading text
-            this.ctx.fillStyle = '#ff5555';
-            this.ctx.font = 'bold 12px "Courier New", monospace';
-            this.ctx.textBaseline = 'middle';
-            this.ctx.textAlign = 'center';
-            this.ctx.fillText('RELOADING', centerX, barY - 8);
-            
-            // Progress bar
-            const barWidth = 60;
-            const barHeight = 4;
-            const barX = centerX - (barWidth / 2);
-            
-            // Background
-            this.ctx.fillStyle = '#333';
-            this.ctx.fillRect(barX, barY, barWidth, barHeight);
-            
-            // Progress
-            const progress = (this.game.timeElapsed - currentWeapon.reloadStartTime) / currentWeapon.reloadTime;
-            const clampedProgress = Utils.clamp(progress, 0, 1);
-            
-            this.ctx.fillStyle = '#ff5555';
-            this.ctx.fillRect(barX, barY, Math.floor(barWidth * clampedProgress), barHeight);
-            
-            // Border
-            this.ctx.strokeStyle = '#555';
-            this.ctx.lineWidth = 1;
-            this.ctx.strokeRect(barX, barY, barWidth, barHeight);
-            
-            this.ctx.restore();
         }
 
         renderMerchant() {
@@ -3225,17 +2691,12 @@
         }
 
         renderWeapon(shake) {
-            // Safety check to ensure weapon system is ready
-            if (!this.game.weaponSystem || !this.game.weaponSystem.inventory) return;
-            
             const weapon = this.game.weaponSystem.getCurrentWeapon();
-            if (!weapon) return; // Safety check to prevent errors
-            
             const gunPos = this.game.weaponSystem.getGunPosition();
             const x = Math.floor(gunPos.x + shake.x);
             const y = Math.floor(gunPos.y + shake.y);
 
-            if (weapon.id === 'knife_mk1' || weapon.range) {
+            if (weapon.type === 'melee') {
                 const angle = this.game.player.facingRight ? 0 : Math.PI;
                 const offsetX = this.game.player.facingRight ? 4 : -4;
                 this.drawWeaponSprite(weapon.sprite, x + offsetX, y, angle);
@@ -3247,36 +2708,10 @@
         }
 
         renderZombies() {
-            // Group zombies by sprite type for batch rendering optimization
-            const zombieGroups = new Map();
-            
             this.game.zombies.forEach(zombie => {
                 const spriteSet = SPRITES[zombie.spriteKey];
                 const sprite = zombie.facingRight ? spriteSet.right : spriteSet.left;
-                const groupKey = `${zombie.spriteKey}_${zombie.facingRight}_${zombie.width}_${zombie.height}`;
-                
-                if (!zombieGroups.has(groupKey)) {
-                    zombieGroups.set(groupKey, { sprite, zombies: [] });
-                }
-                zombieGroups.get(groupKey).zombies.push(zombie);
-            });
-            
-            // Render each group with optimized caching
-            zombieGroups.forEach(group => {
-                const cachedSprite = this.getCachedSprite(group.sprite, group.zombies[0].width, group.zombies[0].height);
-                
-                if (cachedSprite) {
-                    // Use cached sprite for all zombies in this group
-                    group.zombies.forEach(zombie => {
-                        const { originX, originY } = this.getSpriteDrawParams(group.sprite, zombie.x, zombie.y, zombie.width, zombie.height);
-                        this.ctx.drawImage(cachedSprite.canvas, Math.floor(originX), Math.floor(originY));
-                    });
-                } else {
-                    // Fallback to individual rendering
-                    group.zombies.forEach(zombie => {
-                        this.drawSprite(group.sprite, Math.floor(zombie.x), Math.floor(zombie.y), zombie.width, zombie.height);
-                    });
-                }
+                this.drawSprite(sprite, Math.floor(zombie.x), Math.floor(zombie.y), zombie.width, zombie.height);
             });
         }
 
@@ -3297,29 +2732,15 @@
         }
 
         renderBullets() {
-            // Group bullets by type for batch rendering
-            const bulletRects = [];
-            const pelletRects = [];
-            
             this.game.bullets.forEach(bullet => {
+                this.ctx.fillStyle = bullet.isPellet ? PALETTE.bulletPellet : PALETTE.bullet;
                 const size = bullet.isPellet ? 2 : 3;
-                const rect = {
-                    x: Math.floor(bullet.x - size / 2),
-                    y: Math.floor(bullet.y - size / 2),
-                    width: size,
-                    height: size
-                };
-                
-                if (bullet.isPellet) {
-                    pelletRects.push(rect);
-                } else {
-                    bulletRects.push(rect);
-                }
+                this.ctx.fillRect(
+                    Math.floor(bullet.x - size / 2),
+                    Math.floor(bullet.y - size / 2),
+                    size, size
+                );
             });
-            
-            // Batch render bullets by type to reduce state changes
-            this.batchFillRects(bulletRects, PALETTE.bullet);
-            this.batchFillRects(pelletRects, PALETTE.bulletPellet);
         }
 
         renderAcidProjectiles() {
@@ -3333,46 +2754,6 @@
                     this.ctx.arc(Math.floor(projectile.x), Math.floor(projectile.y), 3, 0, Math.PI * 2);
                     this.ctx.fill();
                 }
-            });
-        }
-
-        renderAcidPools() {
-            this.game.acidPools.forEach(pool => {
-                // Calculate opacity based on remaining time (fade out over last 2 seconds)
-                const fadeTime = 2;
-                const opacity = pool.timeRemaining <= fadeTime ? 
-                    (pool.timeRemaining / fadeTime) * 0.8 : 0.8;
-                
-                this.ctx.globalAlpha = opacity;
-                
-                // Draw pool as a larger acid sprite or green ellipse (half height)
-                const sprite = SPRITES.effects.acid;
-                if (sprite && sprite.length > 0) {
-                    // Draw sprites in a 3x2 grid (half height) to create a puddle effect
-                    for (let i = 0; i < 3; i++) {
-                        for (let j = 0; j < 2; j++) { // Only 2 rows instead of 3
-                            const offsetX = (i - 1) * 8;
-                            const offsetY = j * 6; // Smaller vertical spacing
-                            this.drawSprite(sprite, 
-                                Math.floor(pool.x + offsetX), 
-                                Math.floor(pool.y + offsetY), 
-                                10, 8); // Slightly shorter sprites
-                        }
-                    }
-                } else {
-                    // Fallback: draw as green ellipse (half height)
-                    this.ctx.fillStyle = PALETTE.acid;
-                    this.ctx.beginPath();
-                    this.ctx.ellipse(
-                        Math.floor(pool.x + pool.width / 2), 
-                        Math.floor(pool.y + pool.height / 2), 
-                        pool.width / 2, pool.height / 2, // Use actual height for ellipse
-                        0, 0, Math.PI * 2
-                    );
-                    this.ctx.fill();
-                }
-                
-                this.ctx.globalAlpha = 1; // Reset opacity
             });
         }
 
@@ -3446,20 +2827,9 @@
                 
                 const sprite = SPRITES.effects[effect.type];
                 if (sprite && sprite.length > 0) {
-                    let size, width, height, offsetX, offsetY;
-                    
-                    if (effect.type === 'fatExplosion') {
-                        // Use fat zombie dimensions for fat explosion
-                        width = 50;
-                        height = 44;
-                        offsetX = width / 2;
-                        offsetY = height / 2;
-                        this.drawSprite(sprite, Math.floor(effect.x - offsetX), Math.floor(effect.y - offsetY), width, height);
-                    } else {
-                        size = effect.type === 'headshot' ? 16 : 8;
-                        const offset = size / 2;
-                        this.drawSprite(sprite, Math.floor(effect.x - offset), Math.floor(effect.y - offset), size, size);
-                    }
+                    const size = effect.type === 'headshot' ? 16 : 8;
+                    const offset = size / 2;
+                    this.drawSprite(sprite, Math.floor(effect.x - offset), Math.floor(effect.y - offset), size, size);
                 } else {
                     const color = this.getEffectColor(effect.type);
                     this.ctx.fillStyle = color;
@@ -3495,9 +2865,9 @@
             const player = this.game.player;
             const isMobile = MobileDetector.isMobile();
             
-            // Mobile-responsive positioning and sizing - with 5px top padding
+            // Mobile-responsive positioning and sizing - removed padding
             const x = 0;
-            const y = 5;
+            const y = 0;
             const maxWidth = isMobile ? Math.min(CONFIG.HP_BAR_WIDTH, MobileDetector.getWorldWidth() - 60) : CONFIG.HP_BAR_WIDTH;
             const width = Math.max(180, maxWidth); // Minimum width of 180px
             const height = CONFIG.HP_BAR_HEIGHT;
@@ -3514,101 +2884,48 @@
         }
 
         renderWeaponSlots() {
-            const slots = ['main1', 'main2', 'side'];
+            const slots = ['primary', 'secondary', 'melee'];
             const weaponSystem = this.game.weaponSystem;
             const isMobile = MobileDetector.isMobile();
             const worldWidth = MobileDetector.getWorldWidth();
             
             // Mobile-responsive positioning and sizing
-            let tableX, colWidth, colWidths;
-            let columnSpacing;
+            let tableX, colWidth;
             
             if (isMobile) {
-                // On mobile, center the weapon HUD with adaptive column widths
+                // On mobile, calculate optimal column width based on font metrics
+                const healthBarEnd = Math.max(180, Math.min(CONFIG.HP_BAR_WIDTH, worldWidth - 60));
+                tableX = healthBarEnd;  // No spacing after health bar
+                
+                // Calculate width based on content and font size
+                // "2. SECONDARY" is typically the longest label text
+                // Using Courier New 16px bold, approximate 9px per character
+                const maxLabelChars = 12; // "2. SECONDARY" = 12 characters
                 const charWidth = 9; // Courier New 16px approximate width
-                const padding = 15; // Padding for better readability
-                columnSpacing = 10; // Consistent 10px spacing between columns
-                
-                // Calculate individual column widths based on actual weapon names
-                colWidths = slots.map(slot => {
-                    const weapon = weaponSystem.inventory[slot];
-                    if (weapon) {
-                        const nameLength = weapon.name.length;
-                        return (nameLength * charWidth) + padding;
-                    } else {
-                        return (8 * charWidth) + padding; // "Empty" = 5 chars + padding
-                    }
-                });
-                
-                // Calculate total width including spacing
-                const totalWidth = colWidths.reduce((sum, width) => sum + width, 0) + (columnSpacing * 2);
-                
-                // Center the entire weapon HUD
-                tableX = (worldWidth - totalWidth) / 2;
-                
-                // Ensure the weapon HUD doesn't overlap with the health bar
-                const healthBarWidth = Math.min(CONFIG.HP_BAR_WIDTH, worldWidth - 60);
-                const minTableX = healthBarWidth + 30; // Increased spacing after health bar
-                
-                if (tableX < minTableX) {
-                    tableX = minTableX;
-                }
+                const padding = 10; // Small padding for readability
+                colWidth = (maxLabelChars * charWidth) + padding; // ~118px
             } else {
                 // Desktop: Position to the right of the health bar (health bar ends at x = 260)
                 tableX = 260;  // 0 + 260 (health bar start + width)
-                columnSpacing = 10; // Same 10px spacing as mobile for consistency
-                
-                // For desktop, also use adaptive column widths based on text content
-                const charWidth = 9; // Courier New 16px approximate width
-                const padding = 20; // Slightly more padding on desktop for better readability
-                
-                colWidths = slots.map(slot => {
-                    const weapon = weaponSystem.inventory[slot];
-                    if (weapon) {
-                        const nameLength = weapon.name.length;
-                        return (nameLength * charWidth) + padding;
-                    } else {
-                        return (8 * charWidth) + padding; // "Empty" = 5 chars + padding
-                    }
-                });
-                
-                // Position the weapon HUD 10px after the health bar ends
-                tableX = 260 + 10;
+                colWidth = 200;  // Width of each column
             }
             
-            const tableY = isMobile ? 8 : 5;   // Slightly more padding on mobile for better touch targets
-            const rowHeight = isMobile ? 22 : 20;  // Slightly taller rows on mobile for better readability
+            const tableY = 0;   // No padding, aligned with health bar
+            const rowHeight = 20;  // Height of each row
+            const columnSpacing = isMobile ? 8 : 0; // Add spacing between columns on mobile
             
             // Render each column (weapon slot)
             slots.forEach((slot, colIndex) => {
-                // Safety check to ensure colWidths is defined
-                if (!colWidths || !colWidths[colIndex]) {
-                    console.warn('colWidths not properly defined for slot:', slot, 'index:', colIndex);
-                    return;
-                }
+                const x = tableX + (colIndex * (colWidth + columnSpacing));
                 
-                let currentX = tableX;
+                // Row 1: Slot labels (PRIMARY, SECONDARY, MELEE)
+                this.renderSlotLabel(slot, colIndex, x, tableY, weaponSystem, colWidth, rowHeight);
                 
-                // Calculate x position based on previous column widths and spacing
-                for (let i = 0; i < colIndex; i++) {
-                    currentX += colWidths[i] + columnSpacing;
-                }
+                // Row 2: Weapon names
+                this.renderWeaponName(slot, x, tableY + rowHeight, weaponSystem, colWidth, rowHeight);
                 
-                const currentColWidth = colWidths[colIndex];
-                
-                // Add background rectangle for each weapon slot on mobile (without borders)
-                if (isMobile) {
-                    this.ctx.save();
-                    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-                    this.ctx.fillRect(currentX - 5, tableY - 5, currentColWidth + 10, (rowHeight * 2) + 10);
-                    this.ctx.restore();
-                }
-                
-                // Row 1: Weapon names (no slot labels)
-                this.renderWeaponName(slot, currentX, tableY, weaponSystem, currentColWidth, rowHeight);
-                
-                // Row 2: Ammo/reload info
-                this.renderWeaponAmmoInfo(slot, currentX, tableY + rowHeight, weaponSystem, currentColWidth, rowHeight);
+                // Row 3: Ammo/reload info
+                this.renderWeaponAmmoInfo(slot, x, tableY + (rowHeight * 2), weaponSystem, colWidth, rowHeight);
             });
         }
 
@@ -3632,18 +2949,9 @@
             this.ctx.save();
             
             const weapon = weaponSystem.inventory[slot];
-            const isSelected = slot === weaponSystem.currentSlot;
-            
             if (weapon) {
-                // Highlight selected weapon with different color and style
-                if (isSelected) {
-                    this.ctx.fillStyle = '#ffd54a'; // Yellow for selected weapon
-                    this.ctx.font = 'bold 18px "Courier New", monospace'; // Slightly larger font
-                } else {
-                    this.ctx.fillStyle = '#9cf'; // Blue for unselected weapons
-                    this.ctx.font = 'bold 16px "Courier New", monospace';
-                }
-                
+                this.ctx.fillStyle = '#9cf';
+                this.ctx.font = 'bold 16px "Courier New", monospace';
                 this.ctx.textBaseline = 'middle';
                 this.ctx.textAlign = 'center';
                 
@@ -3668,26 +2976,19 @@
             this.ctx.save();
             
             const weapon = weaponSystem.inventory[slot];
-            if (weapon && weapon.id !== 'knife_mk1' && !weapon.range && weapon.ammo) {
-                // Always show ammo count, reload bar now appears above player
-                this.ctx.fillStyle = weapon.isReloading ? '#888' : '#ffd54a';
-                this.ctx.font = 'bold 16px "Courier New", monospace';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.textAlign = 'center';
-                
-                const centerX = x + (colWidth / 2);
-                const centerY = y + (rowHeight / 2);
-                this.ctx.fillText(`${weapon.ammo.current}/∞`, centerX, centerY);
-            } else if (weapon) {
-                // For weapons without ammo (like knife), show a placeholder to maintain alignment
-                this.ctx.fillStyle = '#666';
-                this.ctx.font = 'bold 16px "Courier New", monospace';
-                this.ctx.textBaseline = 'middle';
-                this.ctx.textAlign = 'center';
-                
-                const centerX = x + (colWidth / 2);
-                const centerY = y + (rowHeight / 2);
-                this.ctx.fillText('---', centerX, centerY);
+            if (weapon && weapon.type !== 'melee' && weapon.ammo) {
+                if (weapon.isReloading) {
+                    this.renderReloadingBar(weapon, x, y, colWidth, rowHeight);
+                } else {
+                    this.ctx.fillStyle = '#ffd54a';
+                    this.ctx.font = 'bold 16px "Courier New", monospace';
+                    this.ctx.textBaseline = 'middle';
+                    this.ctx.textAlign = 'center';
+                    
+                    const centerX = x + (colWidth / 2);
+                    const centerY = y + (rowHeight / 2);
+                    this.ctx.fillText(`${weapon.ammo.current}/${weapon.ammo.max}`, centerX, centerY);
+                }
             }
             
             this.ctx.restore();
@@ -3744,12 +3045,13 @@
             if (distance <= merchant.interactionRange) {
                 this.ctx.fillStyle = PALETTE.white;
                 this.ctx.font = '16px monospace';
-                this.ctx.textAlign = 'left';
+                this.ctx.textAlign = 'center';
                 
-                const textX = merchant.x + merchant.width / 2; // Start text at the red line position
+                const merchantCenterX = merchant.x + merchant.width / 2;
                 const textY = merchant.y - 10;
                 
-                this.ctx.fillText('Press E to access computer', textX, textY);
+                this.ctx.fillText('Press E to access computer', merchantCenterX, textY);
+                this.ctx.textAlign = 'left';
             }
         }
 
@@ -3830,15 +3132,6 @@
         drawSprite(sprite, x, y, width, height) {
             if (!sprite || !Array.isArray(sprite) || sprite.length === 0) return;
 
-            // Use cached sprite for better performance
-            const cachedSprite = this.getCachedSprite(sprite, width, height);
-            if (cachedSprite) {
-                const { originX, originY } = this.getSpriteDrawParams(sprite, x, y, width, height);
-                this.ctx.drawImage(cachedSprite.canvas, Math.floor(originX), Math.floor(originY));
-                return;
-            }
-
-            // Fallback to pixel-by-pixel rendering if caching fails
             const { scaleX, scaleY, originX, originY } = this.getSpriteDrawParams(sprite, x, y, width, height);
             const cellWidth = Math.max(1, scaleX);
             const cellHeight = Math.max(1, scaleY);
@@ -3936,7 +3229,6 @@
             this.updatePlayer(dt);
             this.updateBullets(dt);
             this.updateAcidProjectiles(dt);
-            this.updateAcidPools(dt);
             this.updateZombies(dt);
         }
 
@@ -4016,11 +3308,6 @@
             
             if (hitResult.isHeadshot) {
                 this.game.effectsManager.addScreenShake(8);
-                // Play satisfying headshot sound
-                this.game.audioManager.playSound('headshot');
-            } else {
-                // Play pleasant body hit sound
-                this.game.audioManager.playSound('bodyHit');
             }
         }
 
@@ -4134,25 +3421,15 @@
             for (let i = projectiles.length - 1; i >= 0; i--) {
                 const projectile = projectiles[i];
 
-                // Apply gravity (same as bullets)
-                projectile.velocityY += CONFIG.BULLET_GRAVITY * dt;
-
-                // Update position
                 projectile.x += projectile.velocityX * dt;
                 projectile.y += projectile.velocityY * dt;
 
                 if (this.checkAcidPlayerHit(projectile)) {
                     this.game.applyDamage(projectile.damage);
-                    this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'acid');
+                    this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'blood');
                     projectiles.splice(i, 1);
                 } else if (this.shouldRemoveProjectile(projectile)) {
-                    // Check if projectile hit the ground to create acid pool
-                    if (this.projectileHitGround(projectile)) {
-                        this.createAcidPool(projectile.x, projectile.y);
-                        this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'acid');
-                    } else {
-                        this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'spark');
-                    }
+                    this.game.effectsManager.createHitEffect(projectile.x, projectile.y, 'spark');
                     projectiles.splice(i, 1);
                 }
             }
@@ -4173,77 +3450,10 @@
                    projectile.y >= groundY;
         }
 
-        projectileHitGround(projectile) {
-            const worldHeight = MobileDetector.getWorldHeight();
-            const groundY = worldHeight - CONFIG.GROUND_HEIGHT - CONFIG.GROUND_COLLISION_OFFSET;
-            return projectile.y >= groundY;
-        }
-
-        createAcidPool(x, y) {
-            // Don't create overlapping pools - check if there's already one nearby
-            const existingPool = this.game.acidPools.find(pool => {
-                const distance = Math.sqrt((pool.x - x) ** 2 + (pool.y - y) ** 2);
-                return distance < 40; // 40 pixel minimum distance between pools
-            });
-            
-            if (!existingPool) {
-                this.game.acidPools.push({
-                    x: x - 15, // Center the pool around impact point
-                    y: y - 8.5, // Center the pool around impact point (moved 1 pixel up)
-                    width: 30,
-                    height: 15, // Half height for puddle effect
-                    damage: 8, // Damage per second
-                    duration: 10, // Pool lasts 10 seconds
-                    timeRemaining: 10
-                });
-            }
-        }
-
-        updateAcidPools(dt) {
-            const pools = this.game.acidPools;
-            
-            for (let i = pools.length - 1; i >= 0; i--) {
-                const pool = pools[i];
-                
-                // Update pool lifetime
-                pool.timeRemaining -= dt;
-                
-                // Check player collision with acid pool
-                if (this.checkPlayerAcidPoolCollision(pool)) {
-                    this.game.applyDamage(pool.damage * dt); // Damage over time
-                    // Create small damage effect occasionally
-                    if (Math.random() < 0.3) {
-                        this.game.effectsManager.createHitEffect(
-                            pool.x + Math.random() * pool.width,
-                            pool.y + Math.random() * pool.height,
-                            'acid'
-                        );
-                    }
-                }
-                
-                // Remove expired pools
-                if (pool.timeRemaining <= 0) {
-                    pools.splice(i, 1);
-                }
-            }
-        }
-
-        checkPlayerAcidPoolCollision(pool) {
-            const player = this.game.player;
-            return Utils.checkEntityCollision(player, pool);
-        }
-
         updateZombies(dt) {
             this.game.zombies.forEach(zombie => {
                 this.updateZombieAI(zombie, dt);
-                
-                // Apply gravity and ground collision for worm zombies, keep others on ground
-                if (zombie.spriteKey === 'zombieWorm') {
-                    this.updateWormPhysics(zombie, dt);
-                } else {
-                    this.keepZombieOnGround(zombie);
-                }
-                
+                this.keepZombieOnGround(zombie);
                 this.checkZombiePlayerCollision(zombie);
             });
         }
@@ -4360,19 +3570,6 @@
                 velocityY: direction.y * zombie.projectileSpeed,
                 damage: zombie.projectileDamage
             });
-        }
-
-        updateWormPhysics(zombie, dt) {
-            // Apply gravity to worm zombies
-            zombie.velocityY += CONFIG.GRAVITY * dt;
-            zombie.y += zombie.velocityY * dt;
-            
-            // Ground collision
-            const groundY = Utils.getGroundY(MobileDetector.getWorldHeight(), zombie.height);
-            if (zombie.y >= groundY) {
-                zombie.y = groundY;
-                zombie.velocityY = 0;
-            }
         }
 
         keepZombieOnGround(zombie) {
@@ -4523,11 +3720,6 @@
             this.effectsManager = new EffectsManager(this);
             this.renderer = new Renderer(this);
             this.physics = new PhysicsEngine(this);
-            
-            // Apply mobile optimizations if on mobile device
-            if (MobileDetector.isMobile()) {
-                this.renderer.optimizeCanvasForMobile();
-            }
         }
 
         initializeGameState() {
@@ -4537,13 +3729,12 @@
             this.bullets = [];
             this.zombies = [];
             this.acidProjectiles = [];
-            this.acidPools = [];
         }
 
         initializeSprites() {
             // Generate mirrored sprites
             const spritesToFlip = ['player', 'zombie', 'zombieFat', 'zombieSpitter', 
-                                  'zombieTank', 'zombieTankUnshielded', 'zombieWorm', 'computer'];
+                                  'zombieTank', 'zombieTankUnshielded', 'computer'];
             
             spritesToFlip.forEach(spriteName => {
                 if (SPRITES[spriteName] && SPRITES[spriteName].left) {
@@ -4702,18 +3893,16 @@
             // Adjust positioning based on screen size and orientation
             if (MobileDetector.isPortrait()) {
                 // Portrait mode - position controls for tall screen
-                leftStick.style.top = '50%';
+                leftStick.style.bottom = '20px';
                 leftStick.style.left = '20px';
-                leftStick.style.transform = 'translateY(-50%)';
                 mobileButtons.style.bottom = '170px';
-                mobileButtons.style.right = '10px';
+                mobileButtons.style.right = '20px';
             } else {
                 // Landscape mode - position controls for wide screen
-                leftStick.style.top = '50%';
+                leftStick.style.bottom = '20px';
                 leftStick.style.left = '20px';
-                leftStick.style.transform = 'translateY(-50%)';
                 mobileButtons.style.bottom = '120px';
-                mobileButtons.style.right = '10px';
+                mobileButtons.style.right = '20px';
             }
         }
         
@@ -4791,7 +3980,6 @@
             this.shopSystem.merchant.x = Math.max(100, merchantX); // Ensure at least 100px from left edge
             this.shopSystem.setMerchantPosition(groundY);
             
-            
             // Ensure canvas is properly scaled after positioning
             this.handleWindowResize();
         }
@@ -4842,41 +4030,7 @@
             
             // Apply damage to health
             zombie.hp = Math.max(0, zombie.hp - damage);
-            const zombieDied = zombie.hp <= 0;
-            
-            // If fat zombie dies, spawn 4 worm zombies
-            if (zombieDied && zombie.spriteKey === 'zombieFat') {
-                const zombieX = zombie.x + zombie.width / 2;
-                const zombieY = zombie.y;
-                
-                // Create fat explosion effect at fat zombie position
-                this.effectsManager.createHitEffect(zombieX, zombieY, 'fatExplosion');
-                
-                // Spawn 4 worm zombies dropping from above the fat zombie
-                const dropHeight = 60; // Height above the fat zombie to spawn worms
-                const spawnPositions = [
-                    { x: zombieX - 50, y: zombieY - dropHeight },      // Left, above
-                    { x: zombieX + 50, y: zombieY - dropHeight },      // Right, above  
-                    { x: zombieX - 25, y: zombieY - dropHeight - 10 }, // Up-left, higher
-                    { x: zombieX + 25, y: zombieY - dropHeight - 10 }  // Up-right, higher
-                ];
-                
-                for (let i = 0; i < 4; i++) {
-                    const pos = spawnPositions[i];
-                    // Ensure spawn position is within bounds
-                    const clampedX = Math.max(0, Math.min(pos.x, MobileDetector.getWorldWidth() - 20));
-                    
-                    // Create worm zombie manually to control its initial position
-                    const worm = EntityFactory.createZombie(clampedX, 'zombieWorm');
-                    if (worm) {
-                        worm.y = Math.max(0, pos.y); // Start above ground
-                        worm.velocityY = 0; // No initial downward velocity (gravity will take over)
-                        this.zombies.push(worm);
-                    }
-                }
-            }
-            
-            return zombieDied;
+            return zombie.hp <= 0;
         }
 
         triggerGameOver() {
@@ -4890,7 +4044,7 @@
         restart() {
             this.initializeGameState();
             this.weaponSystem.inventory = this.weaponSystem.initializeInventory();
-            this.weaponSystem.currentSlot = 'main1';
+            this.weaponSystem.currentSlot = 'secondary';
             this.waveSystem.reset();
             this.shopSystem.closeShop();
             
@@ -4898,7 +4052,6 @@
             this.zombies = [];
             this.bullets = [];
             this.acidProjectiles = [];
-            this.acidPools = [];
             
             this.setupInitialPositions();
             
@@ -4918,7 +4071,7 @@
         }
 
         render() {
-            this.renderer.render(this.deltaTime);
+            this.renderer.render();
         }
 
         start() {
@@ -4947,9 +4100,8 @@
         game.start();
         
         console.log(`%cZombie Survival Alpha v${CONFIG.GAME_VERSION}`, 'color: #7CFC00; font-size: 16px; font-weight: bold;');
-        console.log('%cControls: WASD to move, 1-2-3 to switch weapons, Mouse to aim/shoot, R to reload, E near computer to access terminal', 'color: #9cf;');
+        console.log('%cControls: WASD to move, 1-2-3 to switch weapons, Mouse to aim/shoot, E near computer to access terminal', 'color: #9cf;');
     });
     </script>
 </body>
-</html>
 </html>
